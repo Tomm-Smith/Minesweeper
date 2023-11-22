@@ -71,10 +71,17 @@ class MineSweeper:
         self.mine_pxs = 16
         self.grid_size = 9
         
-        self.sweep_width = self.mine_pxs * self.grid_size
-        self.sweep_height = self.sweep_width
+        self.x_padding = 9
+        self.y_padding = 8
         
-        self.root.geometry(f"{self.sweep_width}x{self.sweep_height}")
+        self.grid_width = self.mine_pxs * self.grid_size
+        self.grid_height = self.grid_width
+        
+        self.sweep_width = self.grid_width + (self.x_padding * 2)
+        self.sweep_height = self.grid_height + (self.y_padding * 2)
+        
+        self.root.geometry(f"{self.sweep_width+self.x_padding}x" \
+                           f"{self.sweep_height+self.y_padding}")
         self.root.minsize(self.sweep_width, self.sweep_height)
         
         
@@ -87,9 +94,10 @@ class MineSweeper:
         self.gen_field_matrix(9)
         
     def __gui__(self):
+        self.stats = tk.Canvas(self.root, width=self.sweep_width, height=33)
         self.minefield = tk.Canvas(self.root, 
             width=self.sweep_width, height=self.sweep_height,
-            borderwidth=0, bd=0)
+            borderwidth=0, bd=0, highlightthickness=0)
         self.minefield.pack(side="left", fill="none", expand=False)
         
     def __events__(self):
@@ -131,28 +139,31 @@ class MineSweeper:
                 n * self.mine_pxs+1, self.sweep_height-1)
             
     def draw_blocks(self):
+        self.bblock = tk.PhotoImage(file=r"C:\Users\rootp\Documents\Code\Python\GUI\Minesweeper\img\blank_block.gif")
+        if debug:
+            self.minefield.create_image(9,9, image=self.bblock)
+            self.minefield.create_image(25,9, image=self.bblock)
+            self.minefield.create_image(27,28, image=self.bblock)
+            self.minefield.create_image(36, 36, image=self.bblock)
+            
+            
         # Cover mine field with blocks
         self.field_btns = [n for n in range(self.grid_size * self.grid_size)]
         # Canvas/Button place offset
-        field_x, field_y = 1, 1
+        field_x, field_y = self.x_padding+1, self.y_padding+1
         step=0
         
         for y in range(self.grid_size):
             for x in range(self.grid_size):
                 # Create blank img button
-                self.field_btns[step] = tk.Label(self.root, image=self.blank_block, 
+                self.field_btns[step] = tk.Label(self.root, image=self.bblock, 
                     highlightthickness=0, bd=0)
                     
                 self.field_btns[step].id = step
                 self.field_btns[step].bind("<Button-1>", self.field_click)
                 self.field_btns[step].bind("<Button-3>", self.field_flag_click)
                 self.field_btns[step].flag = 0
-                
-                # Hide button inactivity
-                print(f"{step}: {self.field_btns[step]['activeforeground']}")
-                self.field_btns[step]['disabledforeground'] = self.field_btns[step]['activeforeground']
-                print(f"{step}: {self.field_btns[step]['disabledforeground']}")
-                
+                                
                 
                 self.field_btns[step].place(x=field_x, 
                     y=field_y)

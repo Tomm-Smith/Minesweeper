@@ -3,7 +3,7 @@ import os
 import random
 
 global debug
-debug = 0
+debug = True
 
 
 class MineSweeper:
@@ -77,7 +77,7 @@ class MineSweeper:
         self.grid_size = 9
         
         # Mine Border Calc - DO NOT CHANGE
-        self.mine_border = 5
+        self.mine_border = 4
         
         self.field_width = self.mine_pxs * self.grid_size
         self.field_height = self.field_width
@@ -85,40 +85,59 @@ class MineSweeper:
         self.field_width_bd = self.field_width + (self.mine_border * 2)
         self.field_height_bd = self.field_width_bd
         
-        self.root.geometry("164x222")
+        self.root.geometry("164x202")
         
         """
         MineSweeper()
         """
         self.__gui__()
         self.__events__()
-        #self.draw_grid()
-        #self.draw_blocks()
-        #self.gen_field_matrix(9)
+        self.draw_grid()
+        self.draw_blocks()
+        self.gen_field_matrix(9)
         
     def __gui__(self):
         self.root.config(background="#C0C0C0")
         ### File Menu ###
-        """self.menubar = Menu(self.root)
+        self.menubar = tk.Menu(self.root)
         
-        self.file = Menu(self.menubar, tearoff=0)
-        self.file.add_command(label="New", command=None)
-        self.file.add_separator()
-        self.file.add_radiobutton(label="Beginner", command=None)
-        self.file.add_radiobutton(label="Intermediate", command=None)
-        self.file.add_radiobutton(label="Expert", command=None)
-        self.file.add_radiobutton(label="Custom...", command=None)
-        self.file.add_separator()
-        self.file.add_checkbutton(label="Marks (?)", command=None)
-        self.file.add_checkbutton(label="Color", command=None)
-        self.file.add_checkbutton(label="Sound", command=None)
-        self.file.add_separator()
-        self.file.add_command(label="Best Times...")
-        self.file.add_separator()
-        self.file.add_command(label="Exit", command=tk.Quit)
+        if not debug:
+            self.file = tk.Menu(self.menubar, tearoff=0)
+            self.file.add_command(label="Something", command="")
+            self.menubar.add_cascade(label="File", menu=self.file)
+            
+            self.help = tk.Menu(self.menubar, tearoff=0)
+            self.help.add_command(label="Or Another", command="")
+            self.menubar.add_cascade(label="Help", menu=self.help)
         
-        self.help = Menu(self.menubar, tearoff=0)
-        self.help.add_comman(label="About", command=None)"""
+        if debug:
+            self.debug = tk.Menu(self.menubar, tearoff=0)
+            self.debug.add_command(label="WildCard()", command=self.wildcard_debug)
+            self.debug.add_command(label="toggle_buttons()", command=self.toggle_buttons)
+            self.debug.add_command(label="flag_all()", command=self.flag_all)
+            self.debug.add_command(label="question_all()", command=self.question_all)
+            self.menubar.add_cascade(label="Debug", menu=self.debug)
+            
+            self.field_menu = tk.Menu(self.menubar, tearoff=0)
+            self.field_menu.add_command(label="draw_field_debug()", command=self.draw_field_debug)
+            self.field_menu.add_command(label="gen_mines()", command=lambda : self.gen_mines(10))
+            self.field_menu.add_command(label="print_mines()", command=self.print_field)
+            self.field_menu.add_separator()
+            self.field_menu.add_command(label="debug_field()", command=self.debug_field)
+            self.field_menu.add_separator()
+            self.field_menu.add_command(label="Mines", command=lambda : self.fill_field('x'))
+            self.field_menu.add_command(label="Blank", command=lambda : self.fill_field(0))
+            self.field_menu.add_command(label="One", command=lambda : self.fill_field(1))
+            self.field_menu.add_command(label="Two", command=lambda : self.fill_field(2))
+            self.field_menu.add_command(label="Three", command=lambda : self.fill_field(3))
+            self.field_menu.add_command(label="Four", command=lambda : self.fill_field(4))
+            self.field_menu.add_command(label="Five", command=lambda : self.fill_field(5))
+            self.field_menu.add_command(label="Six", command=lambda : self.fill_field(6))
+            self.field_menu.add_command(label="Seven", command=lambda : self.fill_field(7))
+            self.field_menu.add_command(label="Eight", command=lambda : self.fill_field(8))
+            self.menubar.add_cascade(label="Field", menu=self.field_menu)
+        
+        self.root.config(menu=self.menubar)
         
         
         ### ScoreBoard ###
@@ -160,7 +179,8 @@ class MineSweeper:
         self.minefield_bd.create_window(3, 3, anchor="nw", window=self.minefield)
         
     def __events__(self):
-         None
+        #self.root.bind("<Motion>", lambda s: print(self.root.geometry()))
+        None
          
     def field_click(self, event):
         btn = self.field_btns[event.widget.id]
@@ -234,16 +254,12 @@ class MineSweeper:
         for n in range(self.grid_size):
             # Horizontal
             self.minefield.create_line(0, n * self.mine_pxs, 
-                self.field_width, n * self.mine_pxs)
+                self.field_width, n * self.mine_pxs, 
+                fill="#808080")
             # Vertical
             self.minefield.create_line(n * self.mine_pxs, 0, 
-                n * self.mine_pxs, self.field_height)
-                
-        #self.minefield.create_line(0, self.field_height-1, 
-        #    self.field_width, self.field_height-1)
-            
-        #self.minefield.create_line(self.field_width-1, 0, 
-        #    self.field_width-1, self.field_height)
+                n * self.mine_pxs, self.field_height, 
+                fill="#808080")
             
     def draw_blocks(self):
         # Cover mine field with blocks
@@ -276,14 +292,21 @@ class MineSweeper:
         pass
         
     def gen_field_matrix(self, size):
+        """
+        [[[0, None], [0, None], [0, None],
+         [[0, None], [0, None], [0, None],
+         [[0, None], [0, None], [0, None]
+        ]
+        
+        0 - Blank
+        x - Mine
+        1-8 - Analysis
+        """
         self.field = []
         
         for i in range(size):
-            fld = [0 for x in range(size)]
+            fld = [[0, None] for x in range(size)]
             self.field.append(fld)
-            
-        if debug:
-            print(self.field)
     
     def place_mine(self):
         x = random.randrange(0, self.grid_size)
@@ -291,22 +314,138 @@ class MineSweeper:
         
         return [x, y]
         
-    def gen_mines(self, qty, field):
-        mine = place_mine()
-        
-        if field[mine[0]][mine[1]] == 'x':
-            mine = place_mine()
+    def gen_mines(self, qty):
+        for n in range(qty):
+            x, y = self.place_mine()
             
-        else:
-            field[mine[x]][mine[y]] = 'x'
+            if self.field[y][x] != 'x':
+                self.field[y][x][0] = 'x'
+        
+    def analyze_field(self, field):
+        None
         
     def draw_field(self, qty):
-        self.lbl = tk.Label(self.root, image=self.mine, highlightthickness=0, bd=0)
-        self.lbl.place(x=2, y=2)
+        img_src = None
+        field_x, field_y = 8, 8
+        
+        for y in range(self.grid_size):
+            for x in range(self.grid_size):
+            
+                if self.field[y][x][0] == 'x':
+                    img_src = self.mine
+                    
+                elif self.field[y][x][0] == 1:
+                    img_src = self.mine_nums[1]
+                    
+                elif self.field[y][x][0] == 2:
+                    img_src = self.mine_nums[2]
+                    
+                elif self.field[y][x][0] == 3:
+                    img_src = self.mine_nums[3]
+                    
+                elif self.field[y][x][0] == 4:
+                    img_src = self.mine_nums[4]
+                    
+                elif self.field[y][x][0] == 5:
+                    img_src = self.mine_nums[5]
+                    
+                elif self.field[y][x][0] == 6:
+                    img_src = self.mine_nums[6]
+                    
+                elif self.field[y][x][0] == 7:
+                    img_src = self.mine_nums[7]
+                    
+                elif self.field[y][x][0] == 8:
+                    img_src = self.mine_nums[8]
+                    
+                else:
+                    img_src = self.mine_nums[0]
+                    
+                self.minefield.create_image(field_x, field_y, image=img_src)
+                
+                # Offset x
+                field_x += self.mine_pxs
+                
+            field_x = 8
+            field_y += self.mine_pxs
         
     def mainloop(self):
         self.root.mainloop()
         
+    """ DEBUG METHODS """
+    def wildcard_debug(self):
+        None
+        
+    def clear_field(self):
+        None
+        
+    def fill_field(self, fill='x'):
+        for y in range(len(self.field)):
+            for x in range(len(self.field)):
+                self.field[y][x][0] = fill
+                
+        print(self.field)
+
+    def print_field(self):
+        for y in range(len(self.field)):
+            for x in range(len(self.field)):
+                print(f"[{self.field[y][x][0]}] ", end="")
+            print()
+            
+        print("---------------------------------------------------------------")
+            
+    def debug_field(self):
+        self.field = [[0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 'x', 'x', 0, 'x'],
+                      ['x', 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 'x', 0, 'x'],
+                      [0, 0, 'x', 0, 'x', 0, 0, 0, 0],
+                      [0, 0, 0, 0, 'x', 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 'x', 0, 0, 0, 0, 0]]
+    
+        for y in range(len(self.field)):
+            for x in range(len(self.field)):
+                self.field[y][x] = [self.field[y][x], None]
+                
+    def draw_field_debug(self):
+        self.draw_field(self.grid_size)
+        
+    def toggle_buttons(self):
+        try:
+            self.toggle_buttons_debug_flip
+        except:
+            self.toggle_buttons_debug_flip = False
+            
+        if self.toggle_buttons_debug_flip:
+            self.draw_blocks()
+            self.toggle_buttons_debug_flip = False
+            return
+        
+        for obj in self.field_btns:
+            obj.destroy()
+        
+        self.toggle_buttons_debug_flip = True
+        
+    def flag_all(self):
+        try:
+            self.debug_flag_all_flagged
+        except:
+            self.debug_flag_all_flagged = False
+        finally:
+            if self.debug_flag_all_flagged:
+                for obj in self.field_btns:
+                    self.field_flag_click(obj)
+                self.debug_flag_all_flagged = False
+            else:
+                self.debug_flag_all_flagged = True
+                
+        for obj in self.field_btns:
+            self.field_flag_click(obj)
+        
+    def question_all(self):
+        None
         
 if __name__ == "__main__":
     ms = MineSweeper()

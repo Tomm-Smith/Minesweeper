@@ -13,6 +13,7 @@ class MineSweeper:
           of required images used.
         - High Score system
         - Rename images s/bomb/mine/g
+        - Manually populate minefield from Game and analyze / store
     NOTES:
         - Make sure the game reset destroy()'s all the button widgets/bindings
         - What's not your sweep? Minesweeper. 
@@ -74,18 +75,23 @@ class MineSweeper:
         Environment elements
         """
         self.mine_pxs = 16
-        self.grid_size = 9
+        self.field_size = 9
         
         # Mine Border Calc - DO NOT CHANGE
         self.mine_border = 4
         
-        self.field_width = self.mine_pxs * self.grid_size
+        # Field dimensions
+        self.field_width = self.mine_pxs * self.field_size
         self.field_height = self.field_width
         
+        # Field adjusted border
         self.field_width_bd = self.field_width + (self.mine_border * 2)
         self.field_height_bd = self.field_width_bd
         
         self.root.geometry("164x202")
+        
+        self.field = []
+        self.field_imgs = []
         
         """
         MineSweeper()
@@ -95,6 +101,7 @@ class MineSweeper:
         self.draw_grid()
         self.draw_blocks()
         self.gen_field_matrix(9)
+        self.clear_field()
         
     def __gui__(self):
         self.root.config(background="#C0C0C0")
@@ -119,11 +126,19 @@ class MineSweeper:
             self.menubar.add_cascade(label="Debug", menu=self.debug)
             
             self.field_menu = tk.Menu(self.menubar, tearoff=0)
-            self.field_menu.add_command(label="draw_field_debug()", command=self.draw_field_debug)
-            self.field_menu.add_command(label="gen_mines()", command=lambda : self.gen_mines(10))
-            self.field_menu.add_command(label="print_mines()", command=self.print_field)
+            self.field_menu.add_command(label="draw_field()", command=self.draw_field)
+            self.field_menu.add_command(label="clear_field()", command=self.clear_field)
+            self.field_menu.add_command(label="gen_mines() (Draw)", command=lambda : self.gen_mines(10))
+            self.field_menu.add_command(label="print_field()", command=self.print_field)
+            self.field_menu.add_command(label="print_field_imgs()", command=self.print_field_imgs)
             self.field_menu.add_separator()
+            self.field_menu.add_command(label="debug_analyze_field()", command=self.debug_analyze_field)
             self.field_menu.add_command(label="debug_field()", command=self.debug_field)
+            self.field_menu.add_command(label="debug_field_nums()", command=self.debug_field_nums)
+            self.field_menu.add_separator()
+            self.field_menu.add_command(label="debug_proof_wildcard()", command=self.debug_proof_wildcard)
+            self.field_menu.add_command(label="debug_proof_1()", command=self.debug_proof_1)
+            self.field_menu.add_command(label="debug_proof_2()", command=self.debug_proof_2)
             self.field_menu.add_separator()
             self.field_menu.add_command(label="Mines", command=lambda : self.fill_field('x'))
             self.field_menu.add_command(label="Blank", command=lambda : self.fill_field(0))
@@ -251,7 +266,7 @@ class MineSweeper:
         
     def draw_grid(self):
         # Draw grid
-        for n in range(self.grid_size):
+        for n in range(self.field_size):
             # Horizontal
             self.minefield.create_line(0, n * self.mine_pxs, 
                 self.field_width, n * self.mine_pxs, 
@@ -263,13 +278,13 @@ class MineSweeper:
             
     def draw_blocks(self):
         # Cover mine field with blocks
-        self.field_btns = [n for n in range(self.grid_size * self.grid_size)]
+        self.field_btns = [n for n in range(self.field_size * self.field_size)]
         # Canvas/Button place offset
         field_x, field_y = 0, 0
         step=0
         
-        for y in range(self.grid_size):
-            for x in range(self.grid_size):
+        for y in range(self.field_size):
+            for x in range(self.field_size):
                 # Create blank img button
                 self.field_btns[step] = tk.Label(self.minefield, 
                     image = self.blank_block, highlightthickness=0, bd=0)
@@ -293,11 +308,15 @@ class MineSweeper:
         
     def gen_field_matrix(self, size):
         """
-        [[[0, None], [0, None], [0, None],
-         [[0, None], [0, None], [0, None],
-         [[0, None], [0, None], [0, None]
-        ]
+        field = [[[0, None], [0, None], [0, None],
+                 [[0, None], [0, None], [0, None],
+                 [[0, None], [0, None], [0, None]
+                ]
         
+        field[y][x][0] = 0 - Minefield Element (Mine or number)
+        field[y][x][1] = None - Accessory Place holder for mine_flags, img id   
+                            of respective grid image with flag
+                            
         0 - Blank
         x - Mine
         1-8 - Analysis
@@ -308,28 +327,116 @@ class MineSweeper:
             fld = [[0, None] for x in range(size)]
             self.field.append(fld)
     
+        return self.field
+    
     def place_mine(self):
-        x = random.randrange(0, self.grid_size)
-        y = random.randrange(0, self.grid_size)
+        x = random.randrange(0, self.field_size)
+        y = random.randrange(0, self.field_size)
         
         return [x, y]
         
     def gen_mines(self, qty):
+        self.clear_field()
+        
         for n in range(qty):
             x, y = self.place_mine()
             
             if self.field[y][x] != 'x':
                 self.field[y][x][0] = 'x'
+    
+    def field_increment(self, x, y):
+        try:
+            int(self.field[y][x])
+        except ValueError:
+            raise Exception("field_increment(): error: attempted to increment mine")
+            
+        self.field[y][x] += 1
         
-    def analyze_field(self, field):
-        None
+    def is_mine(self, x, y):
+        try:
+            if self.field[y][x][0] == 'x':
+                return True
+            else:
+                return False
+        except IndexError:
+            return False
+            
+    def in_field(self, x, y):
+        if x < 0 or y < 0:
+            return False
+            
+        try:
+            self.field[y][x][0]
+        except IndexError:
+            return False
+        else:
+            return True
+            
+    def analyze_field(self):
+        for y in range(len(self.field)):
+            for x in range(len(self.field)):
+                if self.is_mine(x, y):
+                    if debug:
+                        print(f"DEBUG: analyze_field(): x:{x} y:{y} is_mine: {self.is_mine(x, y)}")
+
+                    ## Previous Row
+                    # Up and Left
+                    if not self.is_mine(x-1, y-1) and self.in_field(x-1, y-1):
+                        self.field[y-1][x-1][0] += 1
+                        
+                    # Up
+                    if not self.is_mine(x, y-1) and self.in_field(x, y-1):
+                        self.field[y-1][x][0] += 1
+                 
+                    # Up and Right
+                    if not self.is_mine(x+1, y-1) and self.in_field(x+1, y-1):
+                        self.field[y-1][x+1][0] += 1
+                    
+                    ## Mine Row
+                    # Left
+                    if not self.is_mine(x-1, y) and self.in_field(x-1, y):
+                        self.field[y][x-1][0] += 1
+                        
+                    # Right
+                    if not self.is_mine(x+1, y) and self.in_field(x+1, y):
+                        self.field[y][x+1][0] += 1
+                    
+                    ## Next Row
+                    # Down and Left
+                    if not self.is_mine(x-1, y+1) and self.in_field(x-1, y+1):
+                        self.field[y+1][x-1][0] += 1
+                        
+                    # Down
+                    if not self.is_mine(x, y+1) and self.in_field(x, y+1):
+                        self.field[y+1][x][0] += 1
+                        
+                    # Down and Right
+                    if not self.is_mine(x+1, y+1) and self.in_field(x+1, y+1):
+                        self.field[y+1][x+1][0] += 1
+
+    def clear_field_imgs(self):
+        """ Clear all images from the field"""
+        for id in self.field_imgs:
+            self.minefield.delete(id)
+            
+        self.field_imgs = []
         
-    def draw_field(self, qty):
+    def clear_field(self):
+        """ Clear the field and image objects"""
+        self.clear_field_imgs()
+        self.field = self.gen_field_matrix(self.field_size)
+        
+    def draw_field(self):
+        # TODO: Manage drew images to prevent memory overflow
         img_src = None
+        # TODO: Why does this require 8px offset?
         field_x, field_y = 8, 8
         
-        for y in range(self.grid_size):
-            for x in range(self.grid_size):
+        self.clear_field_imgs()
+        
+        # Set what image needs drew
+        for y in range(self.field_size):
+            for x in range(self.field_size):
             
                 if self.field[y][x][0] == 'x':
                     img_src = self.mine
@@ -361,11 +468,14 @@ class MineSweeper:
                 else:
                     img_src = self.mine_nums[0]
                     
-                self.minefield.create_image(field_x, field_y, image=img_src)
-                
+                # Track our image ID's
+                self.field_imgs.append(
+                    self.minefield.create_image(field_x, field_y, image=img_src))
+
                 # Offset x
                 field_x += self.mine_pxs
-                
+            
+            # Reset x and offset y
             field_x = 8
             field_y += self.mine_pxs
         
@@ -373,45 +483,6 @@ class MineSweeper:
         self.root.mainloop()
         
     """ DEBUG METHODS """
-    def wildcard_debug(self):
-        None
-        
-    def clear_field(self):
-        None
-        
-    def fill_field(self, fill='x'):
-        for y in range(len(self.field)):
-            for x in range(len(self.field)):
-                self.field[y][x][0] = fill
-                
-        print(self.field)
-
-    def print_field(self):
-        for y in range(len(self.field)):
-            for x in range(len(self.field)):
-                print(f"[{self.field[y][x][0]}] ", end="")
-            print()
-            
-        print("---------------------------------------------------------------")
-            
-    def debug_field(self):
-        self.field = [[0, 0, 0, 0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 'x', 'x', 0, 'x'],
-                      ['x', 0, 0, 0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0, 'x', 0, 'x'],
-                      [0, 0, 'x', 0, 'x', 0, 0, 0, 0],
-                      [0, 0, 0, 0, 'x', 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 'x', 0, 0, 0, 0, 0]]
-    
-        for y in range(len(self.field)):
-            for x in range(len(self.field)):
-                self.field[y][x] = [self.field[y][x], None]
-                
-    def draw_field_debug(self):
-        self.draw_field(self.grid_size)
-        
     def toggle_buttons(self):
         try:
             self.toggle_buttons_debug_flip
@@ -445,7 +516,144 @@ class MineSweeper:
             self.field_flag_click(obj)
         
     def question_all(self):
+        None    
+        
+    def wildcard_debug(self):
         None
+        
+    def fill_field(self, fill='x'):
+        self.clear_field()
+        
+        for y in range(len(self.field)):
+            for x in range(len(self.field)):
+                self.field[y][x][0] = fill
+            
+        self.draw_field()
+
+    def print_field(self):
+        for y in range(len(self.field)):
+            for x in range(len(self.field)):
+                print(f"{self.field[y][x][0]} ", end="")
+            print()
+            
+        print("---------------------------------------------------------------")
+    
+    def print_field_imgs(self):
+        print(f"DEBUG: print_field_imgs(): {self.field_imgs}")
+        
+    def debug_analyze_field(self):
+        self.analyze_field()
+        self.draw_field()
+        
+    def debug_field(self):
+        self.field = [[0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 'x', 'x', 0, 'x'],
+                      ['x', 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 'x', 0, 'x'],
+                      [0, 0, 'x', 0, 'x', 0, 0, 0, 0],
+                      [0, 0, 0, 0, 'x', 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 'x', 0, 0, 0, 0, 0]]
+    
+        for y in range(len(self.field)):
+            for x in range(len(self.field)):
+                self.field[y][x] = [self.field[y][x], None]
+                
+        self.draw_field()
+                
+    def debug_field_nums(self):
+        self.field = [[ 0,  0,  0,  0,  0,  0,   0,  0,  0],
+                      [ 0,  0,  0,  0,  1,  2,   2,  2,  1],
+                      [ 1,  1,  0,  0,  1, 'x', 'x', 2, 'x'],
+                      ['x', 1,  0,  0,  1,  3,   3,  4,  2],
+                      [ 1,  2,  1,  2,  1,  2,  'x', 2, 'x'],
+                      [ 0,  1, 'x', 3, 'x', 3,   1,  2,  1],
+                      [ 0,  1,  1,  3, 'x', 2,   0,  0,  0],
+                      [ 0,  0,  1,  2,  2,  1,   0,  0,  0],
+                      [ 0,  0,  1, 'x', 1,  0,   0,  0,  0]]
+    
+        for y in range(len(self.field)):
+            for x in range(len(self.field)):
+                if self.field[y][x] == 9:
+                    self.field[y][x] = ['x', None]
+                else:
+                    self.field[y][x] = [self.field[y][x], None]
+                    
+        self.draw_field()
+                
+    def draw_field_debug(self):
+        self.draw_field()
+        
+    def debug_proof_wildcard(self):
+        """[[0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0]]
+        """
+        self.field = [[1, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0]]
+    
+        for y in range(len(self.field)):
+            for x in range(len(self.field)):
+                if self.field[y][x] == 1:
+                    self.field[y][x] = ['x', None]
+                else:
+                    self.field[y][x] = [self.field[y][x], None]
+                    
+        self.draw_field()
+        
+    def debug_proof_1(self):
+        self.field = [[0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [1, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 1, 0, 1, 1],
+                      [0, 0, 0, 0, 0, 0, 1, 0, 0],
+                      [0, 1, 0, 0, 0, 0, 0, 0, 0],
+                      [1, 1, 0, 1, 1, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0]]
+    
+        for y in range(len(self.field)):
+            for x in range(len(self.field)):
+                if self.field[y][x] == 1:
+                    self.field[y][x] = ['x', None]
+                else:
+                    self.field[y][x] = [self.field[y][x], None]
+                    
+        self.draw_field()
+
+    def debug_proof_2(self):
+        self.field = [[1, 1, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 1, 0, 0, 1, 0, 0, 0, 0],
+                      [1, 0, 0, 0, 0, 0, 1, 0, 0],
+                      [0, 1, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 1, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 1, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 1, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0]]
+    
+        for y in range(len(self.field)):
+            for x in range(len(self.field)):
+                if self.field[y][x] == 1:
+                    self.field[y][x] = ['x', None]
+                else:
+                    self.field[y][x] = [self.field[y][x], None]
+                    
+        self.draw_field()
         
 if __name__ == "__main__":
     ms = MineSweeper()

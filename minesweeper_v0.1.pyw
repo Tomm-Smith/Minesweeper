@@ -79,6 +79,13 @@ class MineSweeper:
         """
         Environment elements
         """
+        self.root.geometry("164x202")
+        
+        # UI details
+        self.dark_edge = "#808080"
+        self.transient_edge = "#C0C0C0"
+        self.light_edge = "#FFFFFF"
+        
         self.mine_pxs = 16
         self.field_size = 9
         
@@ -92,9 +99,8 @@ class MineSweeper:
         # Field adjusted border
         self.field_width_bd = self.field_width + (self.mine_border * 2)
         self.field_height_bd = self.field_width_bd
-        
-        self.root.geometry("164x202")
-        
+
+        # Field declaration
         self.field = []
         self.field_imgs = []
         
@@ -191,18 +197,22 @@ class MineSweeper:
             height=37, highlightthickness=0, background="#C0C0C0")
         self.scoreboard.pack()
         
+        self.draw_scoreboard_border()
+        
         # Mine Cnt
-        self.mine_cnt = tk.Canvas(self.scoreboard, height=23, width=39,
-            bd=0, highlightthickness=0, background="black")
-        self.scoreboard.create_window(8, 7, anchor="nw", window=self.mine_cnt)
+        self.mine_cnt = tk.Canvas(self.scoreboard, height=25, width=41,
+            bd=0, highlightthickness=0, background="#C0C0C0")
+        self.scoreboard.create_window(9, 8, anchor="nw", window=self.mine_cnt)
         
         # Mine Face
         self.mine_face = self.scoreboard.create_image(62, 6, anchor="nw", image=self.smile_face)
 
         # Mine Timer
-        self.mine_tmr = tk.Canvas(self.scoreboard, height=23, width=39,
-            bd=0, highlightthickness=0, background="black")
-        self.scoreboard.create_window(101, 7, anchor="nw", window=self.mine_tmr)
+        self.mine_tmr = tk.Canvas(self.scoreboard, height=25, width=41,
+            bd=0, highlightthickness=0, background="#C0C0C0")
+        self.scoreboard.create_window(102, 8, anchor="nw", window=self.mine_tmr)
+        
+        self.draw_7seg_border()
         
     def __events__(self):
         #self.root.bind("<Motion>", lambda s: print(self.root.geometry()))
@@ -244,49 +254,95 @@ class MineSweeper:
         print("GAME OVER")
         
     def draw_scoreboard_border(self):
-        pass
+        # Top Edge
+        self.scoreboard.create_line(0, 0, 148, 0, fill=self.dark_edge)
+        self.scoreboard.create_line(0, 1, 148, 1, fill=self.dark_edge)
+        
+        # Top Right Corner
+        self.scoreboard.create_line(148, 0, 149, 0, fill=self.dark_edge)
+        self.scoreboard.create_line(149, 0, 150, 0, fill=self.transient_edge)
+        self.scoreboard.create_line(148, 1, 149, 1, fill=self.transient_edge)
+        self.scoreboard.create_line(149, 1, 150, 1, fill=self.light_edge)
+        
+        # Right Edge
+        self.scoreboard.create_line(148, 2, 149, 150, fill=self.light_edge)
+        self.scoreboard.create_line(149, 2, 150, 150, fill=self.light_edge)
+        
+        # Bottom Edge
+        self.scoreboard.create_line(2, 35, 150, 35, fill=self.light_edge)
+        self.scoreboard.create_line(2, 36, 150, 36, fill=self.light_edge)
+        
+        # Left Edge
+        self.scoreboard.create_line(0, 0, 0, 35, fill=self.dark_edge)
+        self.scoreboard.create_line(1, 0, 1, 35, fill=self.dark_edge)
+
+        # Bottom Left Corner
+        self.scoreboard.create_line(0, 35, 0, 36, fill=self.dark_edge)
+        self.scoreboard.create_line(0, 36, 0, 37, fill=self.transient_edge)
+        self.scoreboard.create_line(1, 35, 1, 36, fill=self.transient_edge)
+        self.scoreboard.create_line(1, 36, 1, 37, fill=self.light_edge)
         
     def draw_7seg_border(self):
-        pass
+        ## Mine cnt 
+        # Top Edge
+        self.mine_cnt.create_line(0, 0, 40, 0, fill=self.dark_edge)
+        
+        # Right Edge
+        self.mine_cnt.create_line(40, 1, 40, 24, fill=self.light_edge)
+        
+        # Bottom Edge
+        self.mine_cnt.create_line(41, 24, 0, 24, fill=self.light_edge)
+        
+        # Left Edge
+        self.mine_cnt.create_line(0, 0, 0, 24, fill=self.dark_edge)
+        
+        
+        ## Mine Timer
+        # Top Edge
+        self.mine_tmr.create_line(0, 0, 40, 0, fill=self.dark_edge)
+        
+        # Right Edge
+        self.mine_tmr.create_line(40, 1, 40, 24, fill=self.light_edge)
+        
+        # Bottom Edge
+        self.mine_tmr.create_line(41, 24, 0, 24, fill=self.light_edge)
+        
+        # Left Edge
+        self.mine_tmr.create_line(0, 0, 0, 24, fill=self.dark_edge)
         
     def draw_mine_border(self):
-        # TODO: Make this dynamnically populated
-        dark_edge = "#808080"
-        transient_edge = "#c0c0c0"
-        light_edge = "#FFFFFF"
-        
         # Top Edge
-        self.minefield_bd.create_line(0, 0, 149, 0, fill=dark_edge)
-        self.minefield_bd.create_line(149, 0, 150, 0, fill=transient_edge)
+        self.minefield_bd.create_line(0, 0, 149, 0, fill=self.dark_edge)
+        self.minefield_bd.create_line(149, 0, 150, 0, fill=self.transient_edge)
         
-        self.minefield_bd.create_line(0, 1, 148, 1, fill=dark_edge)
-        self.minefield_bd.create_line(148, 1, 149, 1, fill=transient_edge)
-        self.minefield_bd.create_line(149, 1, 150, 1, fill=light_edge)
+        self.minefield_bd.create_line(0, 1, 148, 1, fill=self.dark_edge)
+        self.minefield_bd.create_line(148, 1, 149, 1, fill=self.transient_edge)
+        self.minefield_bd.create_line(149, 1, 150, 1, fill=self.light_edge)
         
-        self.minefield_bd.create_line(0, 2, 147, 2, fill=dark_edge)
-        self.minefield_bd.create_line(147, 2, 148, 2, fill=transient_edge)
-        self.minefield_bd.create_line(148, 2, 150, 2, fill=light_edge)
+        self.minefield_bd.create_line(0, 2, 147, 2, fill=self.dark_edge)
+        self.minefield_bd.create_line(147, 2, 148, 2, fill=self.transient_edge)
+        self.minefield_bd.create_line(148, 2, 150, 2, fill=self.light_edge)
 
         # Left / Right Edge Fill
-        self.minefield_bd.create_line(0, 3, 0, 147, fill=dark_edge)
-        self.minefield_bd.create_line(1, 3, 1, 147, fill=dark_edge)
-        self.minefield_bd.create_line(2, 3, 2, 147, fill=dark_edge)
+        self.minefield_bd.create_line(0, 3, 0, 147, fill=self.dark_edge)
+        self.minefield_bd.create_line(1, 3, 1, 147, fill=self.dark_edge)
+        self.minefield_bd.create_line(2, 3, 2, 147, fill=self.dark_edge)
         
-        self.minefield_bd.create_line(147, 3, 147, 150, fill=light_edge)
-        self.minefield_bd.create_line(148, 3, 148, 150, fill=light_edge)
-        self.minefield_bd.create_line(149, 3, 149, 150, fill=light_edge)
+        self.minefield_bd.create_line(147, 3, 147, 150, fill=self.light_edge)
+        self.minefield_bd.create_line(148, 3, 148, 150, fill=self.light_edge)
+        self.minefield_bd.create_line(149, 3, 149, 150, fill=self.light_edge)
         
         #Bottom Edge
-        self.minefield_bd.create_line(0, 147, 2, 147, fill=dark_edge)
-        self.minefield_bd.create_line(2, 147, 3, 147, fill=transient_edge)
-        self.minefield_bd.create_line(3, 147, 149, 147, fill=light_edge)
+        self.minefield_bd.create_line(0, 147, 2, 147, fill=self.dark_edge)
+        self.minefield_bd.create_line(2, 147, 3, 147, fill=self.transient_edge)
+        self.minefield_bd.create_line(3, 147, 149, 147, fill=self.light_edge)
         
-        self.minefield_bd.create_line(0, 148, 1, 148, fill=dark_edge)
-        self.minefield_bd.create_line(1, 148, 2, 148, fill=transient_edge)
-        self.minefield_bd.create_line(2, 148, 149, 148, fill=light_edge)
+        self.minefield_bd.create_line(0, 148, 1, 148, fill=self.dark_edge)
+        self.minefield_bd.create_line(1, 148, 2, 148, fill=self.transient_edge)
+        self.minefield_bd.create_line(2, 148, 149, 148, fill=self.light_edge)
         
-        self.minefield_bd.create_line(0, 149, 1, 149, fill=transient_edge)
-        self.minefield_bd.create_line(1, 149, 149, 149, fill=light_edge)
+        self.minefield_bd.create_line(0, 149, 1, 149, fill=self.transient_edge)
+        self.minefield_bd.create_line(1, 149, 149, 149, fill=self.light_edge)
         
     def draw_grid(self):
         # Draw grid

@@ -47,6 +47,7 @@ class MineSweeper:
         self.sevenseg[8] = tk.PhotoImage(file=fr"{path}\img\7_segment\8.gif")
         self.sevenseg[9] = tk.PhotoImage(file=fr"{path}\img\7_segment\9.gif")
         
+        # Mine Face... is a handsome one
         self.smile_face = tk.PhotoImage(file=fr"{path}\img\smile_face.gif")
         self.smile_face_pressed = tk.PhotoImage(file=fr"{path}\img\smile_face_pressed.gif")
         self.wow_face = tk.PhotoImage(file=fr"{path}\img\wow_face.gif")
@@ -159,22 +160,6 @@ class MineSweeper:
         
         self.root.config(menu=self.menubar)
         
-        
-        ### ScoreBoard ###
-        self.scoreboard_frm = tk.Frame(self.root)
-        self.scoreboard_frm.pack(side="top")
-        
-        self.scoreboard = tk.Canvas(self.scoreboard_frm, width=self.field_width,
-            height=33, border=0, background="black")
-        self.scoreboard.pack()
-        
-        #self.mine_cnt = tk.Canvas(self.scoreboard, )
-        
-        #self.mine_face = 
-        
-        #self.mine_timer = 
-        
-        
         ### MineField ###
         # Border
         self.minefield_bd_frm = tk.Frame(self.root, border=self.mine_border, 
@@ -185,7 +170,7 @@ class MineSweeper:
             height=self.field_height_bd, 
             width=self.field_width_bd, 
             background="#C0C0C0", 
-            border=0, highlightthickness=0)
+            bd=0, highlightthickness=0)
         self.minefield_bd.pack(fill="none", expand=False)
         
         self.draw_mine_border()
@@ -195,8 +180,29 @@ class MineSweeper:
             height=self.field_height, 
             width=self.field_width, 
             background="#C0C0C0",
-            border=0, highlightthickness=0)
+            bd=0, highlightthickness=0)
         self.minefield_bd.create_window(3, 3, anchor="nw", window=self.minefield)
+        
+        ### ScoreBoard ###
+        self.scoreboard_frm = tk.Frame(self.root, highlightthickness=0)
+        self.scoreboard_frm.pack(side="bottom")
+        
+        self.scoreboard = tk.Canvas(self.scoreboard_frm, width=150,
+            height=37, highlightthickness=0, background="#C0C0C0")
+        self.scoreboard.pack()
+        
+        # Mine Cnt
+        self.mine_cnt = tk.Canvas(self.scoreboard, height=23, width=39,
+            bd=0, highlightthickness=0, background="black")
+        self.scoreboard.create_window(8, 7, anchor="nw", window=self.mine_cnt)
+        
+        # Mine Face
+        self.mine_face = self.scoreboard.create_image(62, 6, anchor="nw", image=self.smile_face)
+
+        # Mine Timer
+        self.mine_tmr = tk.Canvas(self.scoreboard, height=23, width=39,
+            bd=0, highlightthickness=0, background="black")
+        self.scoreboard.create_window(101, 7, anchor="nw", window=self.mine_tmr)
         
     def __events__(self):
         #self.root.bind("<Motion>", lambda s: print(self.root.geometry()))
@@ -230,9 +236,17 @@ class MineSweeper:
             print("ERROR: field_flag_click(): unhandled exception")
 
     def mine_click(self, event=None):
+        """
+        - show wrong flags
+        - show mines
+        - change face
+        """
         print("GAME OVER")
         
     def draw_scoreboard_border(self):
+        pass
+        
+    def draw_7seg_border(self):
         pass
         
     def draw_mine_border(self):

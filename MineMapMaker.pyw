@@ -1,3 +1,9 @@
+"""
+MineMapMaker - A simple map maker for minesweep.
+
+ToDo: 
+    -Create function for calculation area by click on canvas for grid selection
+"""
 import tkinter as tk
 import os
 import random
@@ -104,8 +110,7 @@ class MineSweeper:
         self.__events__()
         self.draw_grid()
         self.gen_field_matrix(9)
-        self.draw_blocks()
-        #self.clear_field()
+
         
     def __gui__(self):
         self.root.config(background="#C0C0C0")
@@ -229,7 +234,7 @@ class MineSweeper:
         else:
             print("ERROR: field_flag_click(): unhandled exception")
 
-    def mine_click(self, event=None):
+    def mine_clicked(self):
         print("GAME OVER")
         
     def draw_scoreboard_border(self):
@@ -286,72 +291,6 @@ class MineSweeper:
                 n * self.mine_pxs, self.field_height, 
                 fill="#808080")
             
-    def draw_blocks(self):
-        # Cover mine field with blocks
-        self.field_btns = [n for n in range(self.field_size * self.field_size)]
-        # Canvas/Button place offset
-        field_x, field_y = 0, 0
-        step=0
-        
-        for y in range(self.field_size):
-            for x in range(self.field_size):
-                # Create blank img button
-                self.field_btns[step] = tk.Label(self.minefield, 
-                    image=self.blank_block, highlightthickness=0, bd=0)
-                    
-                self.field_btns[step].id = step
-                # Choose handler for what's under the clicked block
-                if self.field[y][x][0] == 'x':
-                    print("aaabbcccddkldsjf9399382")
-                    self.field_btns[step].bind("<Button-1>", self.mine_click)
-                else:
-                    self.field_btns[step].bind("<Button-1>", self.field_click)
-                    
-                self.field_btns[step].bind("<Button-3>", self.field_flag_click)
-                self.field_btns[step].flag = 0
-                
-                self.field_btns[step].place(x=field_x, 
-                    y=field_y)
-                # Offset x
-                field_x += self.mine_pxs
-                step += 1
-                
-            field_x = 0
-            field_y += self.mine_pxs
-                
-    def draw_blocks_new(self):
-        # Canvas/Button place offset
-        field_x, field_y = 0, 0
-        # step=0
-        
-        for y in range(self.field_size):
-            for x in range(self.field_size):
-                # Create blank img button
-                btn = tk.Label(self.minefield, 
-                    image = self.blank_block, highlightthickness=0, bd=0)
-                    
-                #self.field_btns[step].id = step
-                btn.x_coord = x
-                btn.y_coord = y
-                btn.flag = 0
-
-                # flag bomb status to object
-                if self.field[y][x][0] == 'x':
-                    btn.bind("<Button-1>", self.mine_clicked)
-                else:
-                    btn.bind("<Button-1>", self.field_click)
-                    
-                btn.bind("<Button-3>", self.field_flag_click)
-                
-                btn.place(x=field_x, 
-                    y=field_y)
-                # Offset x
-                field_x += self.mine_pxs
-                #step += 1
-                
-            field_x = 0
-            field_y += self.mine_pxs
-        
     def gen_field_matrix(self, size):
         """
         field = [[[0, None], [0, None], [0, None],
@@ -380,89 +319,6 @@ class MineSweeper:
         y = random.randrange(0, self.field_size)
         
         return [x, y]
-        
-    def gen_mines(self, qty):
-        self.clear_field()
-        
-        for n in range(qty):
-            x, y = self.place_mine()
-            
-            if self.field[y][x] != 'x':
-                self.field[y][x][0] = 'x'
-    
-    def field_increment(self, x, y):
-        try:
-            int(self.field[y][x])
-        except ValueError:
-            raise Exception("field_increment(): error: attempted to increment mine")
-            
-        self.field[y][x] += 1
-        
-    def is_mine(self, x, y):
-        """ If x in grid and is 'x' return True, False otherwise"""
-        try:
-            if self.field[y][x][0] == 'x':
-                return True
-            else:
-                return False
-        except IndexError:
-            return False
-            
-    def in_field(self, x, y):
-        """ Is [x,y] a valid position in the field grid"""
-        # Only check positive numbers to prevent grid runoff
-        if x < 0 or y < 0:
-            return False
-        
-        # Ensure locations is within grid area
-        try:
-            self.field[y][x][0]
-        except IndexError:
-            return False
-        else:
-            return True
-            
-    def analyze_field(self):
-        for y in range(len(self.field)):
-            for x in range(len(self.field)):
-                if self.is_mine(x, y):
-                    if debug:
-                        print(f"DEBUG: analyze_field(): x:{x} y:{y} is_mine: {self.is_mine(x, y)}")
-
-                    ## Previous Row
-                    # Up and Left
-                    if not self.is_mine(x-1, y-1) and self.in_field(x-1, y-1):
-                        self.field[y-1][x-1][0] += 1
-                        
-                    # Up
-                    if not self.is_mine(x, y-1) and self.in_field(x, y-1):
-                        self.field[y-1][x][0] += 1
-                 
-                    # Up and Right
-                    if not self.is_mine(x+1, y-1) and self.in_field(x+1, y-1):
-                        self.field[y-1][x+1][0] += 1
-                    
-                    ## Mine Row
-                    # Left
-                    if not self.is_mine(x-1, y) and self.in_field(x-1, y):
-                        self.field[y][x-1][0] += 1
-                        
-                    # Right
-                    if not self.is_mine(x+1, y) and self.in_field(x+1, y):
-                        self.field[y][x+1][0] += 1
-                    
-                    ## Next Row
-                    # Down and Left
-                    if not self.is_mine(x-1, y+1) and self.in_field(x-1, y+1):
-                        self.field[y+1][x-1][0] += 1
-                        
-                    # Down
-                    if not self.is_mine(x, y+1) and self.in_field(x, y+1):
-                        self.field[y+1][x][0] += 1
-                        
-                    # Down and Right
-                    if not self.is_mine(x+1, y+1) and self.in_field(x+1, y+1):
-                        self.field[y+1][x+1][0] += 1
 
     def clear_field_imgs(self):
         """ Clear all images from the field"""

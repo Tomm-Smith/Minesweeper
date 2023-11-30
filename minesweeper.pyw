@@ -6,8 +6,128 @@ global debug
 debug = True
 
 
-class MineField:
-    field = None
+class MineField_Obj:
+    """
+    [[[field_dirt, mask_id, block_id], ...],
+     [[0, mid, bid]]
+    ]
+    
+    field_dirt - 9: mine, 1-8: field analysis
+    mask_id - image id returned from Canvas.create_image() 
+    block_wdgt - widget reference of respective button covering field slot
+    """
+
+    field = [
+                [[0, None, None], [0, None, None], [0, None, None], 
+                 [0, None, None], [0, None, None], [0, None, None], 
+                 [0, None, None], [0, None, None], [0, None, None]
+                ],
+                [[0, None, None], [0, None, None], [0, None, None], 
+                 [0, None, None], [0, None, None], [0, None, None], 
+                 [0, None, None], [0, None, None], [0, None, None]
+                ],
+                [[0, None, None], [0, None, None], [0, None, None], 
+                 [0, None, None], [0, None, None], [0, None, None], 
+                 [0, None, None], [0, None, None], [0, None, None]
+                ],
+                [[0, None, None], [0, None, None], [0, None, None], 
+                 [0, None, None], [0, None, None], [0, None, None], 
+                 [0, None, None], [0, None, None], [0, None, None]
+                ],
+                [[0, None, None], [0, None, None], [0, None, None], 
+                 [0, None, None], [0, None, None], [0, None, None], 
+                 [0, None, None], [0, None, None], [0, None, None]
+                ],
+                [[0, None, None], [0, None, None], [0, None, None], 
+                 [0, None, None], [0, None, None], [0, None, None], 
+                 [0, None, None], [0, None, None], [0, None, None]
+                ],
+                [[0, None, None], [0, None, None], [0, None, None], 
+                 [0, None, None], [0, None, None], [0, None, None], 
+                 [0, None, None], [0, None, None], [0, None, None]
+                ],
+                [[0, None, None], [0, None, None], [0, None, None], 
+                 [0, None, None], [0, None, None], [0, None, None], 
+                 [0, None, None], [0, None, None], [0, None, None]
+                ],
+                [[0, None, None], [0, None, None], [0, None, None], 
+                 [0, None, None], [0, None, None], [0, None, None], 
+                 [0, None, None], [0, None, None], [0, None, None]
+                ],
+            ]
+
+    def __init__(self, field_size=9, minefield_wdgt):
+        self.field_size = field_size
+        self.minefield_wdgt = minefield_wdgt
+        pass
+        
+    def delete_mask(self, x, y):
+        # Attempt mask image deletion and handle exceptions
+        try:
+            field[y][x] 
+        
+    def delete_block(self, x, y):
+        # Attempt block widget destruction and handle exceptions
+        try:
+            field[y][x][2].destroy()
+        except IndexError:
+            raise IndexError("Minefield_Obj -> delete_block(): index out of range")
+        except AttributeError:
+            raise AttributeError: "Minefield_Obj -> delete_block(): expected attribute doesn't exist")
+        else:
+            return True
+            
+    def generate_field(self, field, size=None):
+        """generate_field() - Generate a clean field data structure
+        
+        - assumes that mask and block elements have already been destroyed."""
+        # Set default field size
+        if not size:
+            size = self.field_size
+            
+        field = []
+        for elem in range(size):
+            field.append([[0, None, None] for n in range(size)])
+            
+        return field
+        
+    def is_mine(self, x, y):
+        # If location is not int(), return false
+        try:    
+            int(field[y][x][0])
+        except ValueError:
+            return False
+            
+        # 9 flag == mine
+        if field[y][x][0] == 9:
+            return True
+        else:
+            return False
+        
+    def place_mine(self, x, y):
+        try:
+            self.field_size[y][x][0] = 9
+        except IndexError:
+            raise IndexError("Minefield_Obj -> place_mine(): list index out of range")
+            
+        return True
+        
+    def reset_field(self):
+        size = len(field)
+        
+        for y in range(size):
+            for x in range(size):
+                # Reset mine bit
+                field[y][x][0] = 0
+                
+                ## Memory Management
+                # Delete the mask overlay image
+                self.minefield_wdgt.delete(field[y][x][1])
+                # Delete clickable block widget
+                field[y][x][2].delete()
+                
+        self.generate_field(self.field_size)
+        
 
 
 class MineSweeper:
@@ -287,7 +407,7 @@ class MineSweeper:
                 fill="#808080")
             
     def draw_blocks(self):
-        # Cover mine field with blocks
+        # Create empty field_btns index
         self.field_btns = [n for n in range(self.field_size * self.field_size)]
         # Canvas/Button place offset
         field_x, field_y = 0, 0
@@ -299,14 +419,19 @@ class MineSweeper:
                 self.field_btns[step] = tk.Label(self.minefield, 
                     image=self.blank_block, highlightthickness=0, bd=0)
                     
+                # Populate widget information
                 self.field_btns[step].id = step
-                self.field_btns[step].bind("<Button-1>", self.field_click)
-                self.field_btns[step].bind("<Button-3>", self.field_flag_click)
                 self.field_btns[step].flag = 0
                 
+                # Bind widget events
+                self.field_btns[step].bind("<Button-1>", self.field_click)
+                self.field_btns[step].bind("<Button-3>", self.field_flag_click)
+
+                # Place button widget on Canvas
                 self.field_btns[step].place(x=field_x, 
                     y=field_y)
-                # Offset x
+                    
+                # Offset and increment
                 field_x += self.mine_pxs
                 step += 1
                 
@@ -348,18 +473,7 @@ class MineSweeper:
         
     def gen_field_matrix(self, size):
         """
-        field = [[[0, None], [0, None], [0, None],
-                 [[0, None], [0, None], [0, None],
-                 [[0, None], [0, None], [0, None]
-                ]
-        
-        field[y][x][0] = 0 - Minefield Element (Mine or number)
-        field[y][x][1] = None - Accessory Place holder for mine_flags, img id   
-                            of respective grid image with flag
-                            
-        0 - Blank
-        x - Mine
-        1-8 - Analysis
+
         """
         self.field = []
         

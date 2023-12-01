@@ -35,7 +35,7 @@ class MineSweeper:
         path = os.getcwd()
         
         # 7 Segment Display
-        self.sevenseg = [n for n in range(10)]
+        self.sevenseg = [n for n in range(11)]
         self.sevenseg[0]= tk.PhotoImage(file=fr"{path}\img\7_segment\0.gif")
         self.sevenseg[1] = tk.PhotoImage(file=fr"{path}\img\7_segment\1.gif")
         self.sevenseg[2] = tk.PhotoImage(file=fr"{path}\img\7_segment\2.gif")
@@ -46,6 +46,7 @@ class MineSweeper:
         self.sevenseg[7] = tk.PhotoImage(file=fr"{path}\img\7_segment\7.gif")
         self.sevenseg[8] = tk.PhotoImage(file=fr"{path}\img\7_segment\8.gif")
         self.sevenseg[9] = tk.PhotoImage(file=fr"{path}\img\7_segment\9.gif")
+        self.sevenseg[10] = tk.PhotoImage(file=fr"{path}\img\7_segment\-.gif")
         
         # Mine Face... is a handsome one
         self.smile_face = tk.PhotoImage(file=fr"{path}\img\smile_face.gif")
@@ -89,6 +90,9 @@ class MineSweeper:
         self.mine_pxs = 16
         self.field_size = 9
         
+        self.mines = 10
+        self.mines_remaining = self.mines
+        
         # Mine Border Calc - DO NOT CHANGE
         self.mine_border = 4
         
@@ -103,6 +107,9 @@ class MineSweeper:
         # Field declaration
         self.field = []
         self.field_imgs = []
+        
+        # Mine Counter image ID index
+        self.mine_cnt_ids = [None, None, None]
         
         """
         MineSweeper()
@@ -134,6 +141,9 @@ class MineSweeper:
             self.debug.add_command(label="toggle_buttons()", command=self.toggle_buttons)
             self.debug.add_command(label="flag_all()", command=self.flag_all)
             self.debug.add_command(label="question_all()", command=self.question_all)
+            self.debug.add_separator()
+            self.debug.add_command(label="mine++", command=lambda : self.update_mine_cntr(1))
+            self.debug.add_command(label="mine--", comman=lambda : self.update_mine_cntr(-1))
             self.menubar.add_cascade(label="Debug", menu=self.debug)
             
             self.field_menu = tk.Menu(self.menubar, tearoff=0)
@@ -204,8 +214,11 @@ class MineSweeper:
             bd=0, highlightthickness=0, background="#C0C0C0")
         self.scoreboard.create_window(9, 8, anchor="nw", window=self.mine_cnt)
         
+        self.update_mine_cntr()
+        
         # Mine Face
-        self.mine_face = self.scoreboard.create_image(62, 6, anchor="nw", image=self.smile_face)
+        self.mine_face = self.scoreboard.create_image(62, 6, anchor="nw", 
+            image=self.smile_face)
 
         # Mine Timer
         self.mine_tmr = tk.Canvas(self.scoreboard, height=25, width=41,
@@ -236,12 +249,15 @@ class MineSweeper:
 
         elif event.widget.flag == 1:
             event.widget.config(image=self.flag_block)
-            self.field[event.widget.y_coord][event.widget.x_coord][1] = True
+            # draw_blocks_new dev feature
+            #self.field[event.widget.y_coord][event.widget.x_coord][1] = True
+            self.update_mine_cntr(-1)
 
         elif event.widget.flag == 2:
             event.widget.config(image=self.question_block)
-            self.field[event.widget.y_coord][event.widget.x_coord][1] = False
-
+            #self.field[event.widget.y_coord][event.widget.x_coord][1] = False
+            self.update_mine_cntr(1)
+            
         else:
             print("ERROR: field_flag_click(): unhandled exception")
 
@@ -344,6 +360,63 @@ class MineSweeper:
         self.minefield_bd.create_line(0, 149, 1, 149, fill=self.transient_edge)
         self.minefield_bd.create_line(1, 149, 149, 149, fill=self.light_edge)
         
+    def update_mine_cntr(self, step=0):
+        """
+        - Best way to update images and destroy previous?
+        
+        TODO: Make this dynamically update per only what needs changed
+        """
+        try:
+            int(step)
+        except ValueError:
+            raise ValueError("Minesweeper -> update_mine_cntr(step): expects integer, other given")
+        
+        self.mines_remaining += step
+        
+        if self.mines_remaining > 999:
+            self.mines_remaining = 000
+            
+        # Delete previous images
+        for i in range(len(self.mine_cnt_ids)):
+            if self.mine_cnt_ids[i] != None:
+                self.mine_cnt.delete(i)
+                self.mine_cnt_ids[i] = None
+            
+        # Seperate our intergar
+        _str = str(self.mines_remaining)
+        print(f"DEBUG: update_mine_cntr(): _str: {_str}")
+        # Properly pad with 0's
+        if self.mines_remaining < -9:
+            mines = [10, int(_str[1]), int(_str[2])]
+            
+        elif self.mines_remaining < 0:
+            mines = [10, 0, int(_str[1])]
+            
+        elif self.mines_remaining == 0:
+            mines = [0, 0, 0]
+            
+        elif self.mines_remaining < 10:
+            mines = [0, 0, int(_str[0])]
+            
+        elif self.mines_remaining > 9:
+            mines = [0, int(_str[0]), int(_str[1])]
+            
+        elif self.mines_remaining > 99:
+            mines = [int(_str[0]), int(_str[1]), int(_str[2])]
+        
+        else: 
+            mines = [10, 10, 10]
+        
+        # Store img ID and assign image respectively
+        self.mine_cnt_ids[0] = self.mine_cnt.create_image(1, 1, 
+            image=self.sevenseg[mines[0]], anchor="nw")
+        self.mine_cnt_ids[1] = self.mine_cnt.create_image(14, 1, 
+            image=self.sevenseg[mines[1]], anchor="nw")
+        self.mine_cnt_ids[2] = self.mine_cnt.create_image(27, 1, 
+            image=self.sevenseg[mines[2]], anchor="nw")
+            
+        return True
+            
     def draw_grid(self):
         # Draw grid
         for n in range(self.field_size):

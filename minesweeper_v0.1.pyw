@@ -1,3 +1,9 @@
+"""
+TODO:
+    - Make generalized function for 7 segment display updating. 
+        EG. set_display('timer', 30) - Works on both displays
+"""
+
 import tkinter as tk
 import os
 import random
@@ -80,7 +86,10 @@ class MineSweeper:
         """
         Environment elements
         """
-        self.root.geometry("164x202")
+        if debug:
+            self.root.geometry("164x202+350+468")
+        else:
+            self.root.geometry("164x202")
         
         # UI details
         self.dark_edge = "#808080"
@@ -111,6 +120,12 @@ class MineSweeper:
         # Mine Counter image ID index
         self.mine_cnt_ids = [None, None, None]
         
+        # Timer basis
+        self.mine_time = 0
+        self.mine_time_limit = 999
+        self.mine_timer_bool = False
+        self.mine_timer_ids = [None for i in range(3)]
+        
         """
         MineSweeper()
         """
@@ -120,6 +135,8 @@ class MineSweeper:
         self.gen_field_matrix(9)
         self.draw_blocks()
         #self.clear_field()
+        
+        self.mainloop()
         
     def __gui__(self):
         self.root.config(background="#C0C0C0")
@@ -134,6 +151,10 @@ class MineSweeper:
             self.help = tk.Menu(self.menubar, tearoff=0)
             self.help.add_command(label="Or Another", command="")
             self.menubar.add_cascade(label="Help", menu=self.help)
+            """ Help Dialog:
+                - EasterEgg?
+                - It aslways seems impossible until it's done. - Nelson Mandela
+            """
         
         if debug:
             self.debug = tk.Menu(self.menubar, tearoff=0)
@@ -221,11 +242,12 @@ class MineSweeper:
             image=self.smile_face)
 
         # Mine Timer
-        self.mine_tmr = tk.Canvas(self.scoreboard, height=25, width=41,
+        self.mine_timer = tk.Canvas(self.scoreboard, height=25, width=41,
             bd=0, highlightthickness=0, background="#C0C0C0")
-        self.scoreboard.create_window(102, 8, anchor="nw", window=self.mine_tmr)
+        self.scoreboard.create_window(102, 8, anchor="nw", window=self.mine_timer)
         
         self.draw_7seg_border()
+        self.set_time(0)
         
     def __events__(self):
         #self.root.bind("<Motion>", lambda s: print(self.root.geometry()))
@@ -233,6 +255,11 @@ class MineSweeper:
          
     def field_click(self, event):
         btn = self.field_btns[event.widget.id]
+        
+        # Start timer
+        if not self.mine_timer_bool:
+            self.mine_timer_bool = True
+            self.timer_handle()
         
         if btn.flag == 1:
             return
@@ -315,16 +342,16 @@ class MineSweeper:
         
         ## Mine Timer
         # Top Edge
-        self.mine_tmr.create_line(0, 0, 40, 0, fill=self.dark_edge)
+        self.mine_timer.create_line(0, 0, 40, 0, fill=self.dark_edge)
         
         # Right Edge
-        self.mine_tmr.create_line(40, 1, 40, 24, fill=self.light_edge)
+        self.mine_timer.create_line(40, 1, 40, 24, fill=self.light_edge)
         
         # Bottom Edge
-        self.mine_tmr.create_line(41, 24, 0, 24, fill=self.light_edge)
+        self.mine_timer.create_line(41, 24, 0, 24, fill=self.light_edge)
         
         # Left Edge
-        self.mine_tmr.create_line(0, 0, 0, 24, fill=self.dark_edge)
+        self.mine_timer.create_line(0, 0, 0, 24, fill=self.dark_edge)
         
     def draw_mine_border(self):
         # Top Edge
@@ -384,7 +411,7 @@ class MineSweeper:
             
         # Seperate our intergar
         _str = str(self.mines_remaining)
-        print(f"DEBUG: update_mine_cntr(): _str: {_str}")
+
         # Properly pad with 0's
         if self.mines_remaining < -9:
             mines = [10, int(_str[1]), int(_str[2])]
@@ -397,14 +424,14 @@ class MineSweeper:
             
         elif self.mines_remaining < 10:
             mines = [0, 0, int(_str[0])]
+        
+        elif self.mines_remaining > 99:
+            mines = [int(_str[0]), int(_str[1]), int(_str[2])]
             
         elif self.mines_remaining > 9:
             mines = [0, int(_str[0]), int(_str[1])]
             
-        elif self.mines_remaining > 99:
-            mines = [int(_str[0]), int(_str[1]), int(_str[2])]
-        
-        else: 
+        else:
             mines = [10, 10, 10]
         
         # Store img ID and assign image respectively
@@ -417,6 +444,82 @@ class MineSweeper:
             
         return True
             
+    def timer_handle(self, time=None):
+        """ Handle the timer hook to mainloop() and update the timer display"""
+        # Stop timing loop if past time limit
+        if self.mine_time >= self.mine_time_limit:
+            if debug: print("MineSweeper -> timer_handle(): broke timer loop due to exceedance")
+            return
+        
+        # Ensure only int on provided time
+        if time != None:
+            try:
+                int(time)
+            except TypeError:
+                self.mine_time=0
+                if debug: print("Internal Error: Minesweeper -> timer_handle(): given argument type other than int")
+        
+        # Update time and display
+        self.mine_time += 1
+        self.set_time(self.mine_time)
+        
+        # Attach our timer hook to mainloop()
+        if self.mine_timer_bool:
+            self.root.after(1000, self.timer_handle)
+        
+    def set_time(self, time=None):
+        """TODO: Make this dynamically update the display; change the _ids list
+           to include numbers of displayed segments
+           TODO: Create is_int() method"""
+           
+        # Set argument default value to self.mine_time
+        # Python does not allow self.vars to be argument defaults to methods
+        # So if None: time = self.mine_time
+        if time != None:
+            # Ensure provided time is within range
+            if time > self.mine_time_limit or time < 0:
+                if debug: print("Limit Exceedance: Minesweeper -> set_time(): provided time argument is outside time limit")
+                self.mine_time = 999
+            else:
+                self.mine_time = time
+                
+        ## Set mine time
+        # integer's lack lefthand 0's, so we define and pad respectively
+        segs = [0, 0, 0]
+        
+        # Single Digit Number
+        if self.mine_time < 10:
+            segs[2] = self.mine_time
+        
+        ## digits > 9 require string casting for individualizing the integer
+        # Cast integer type to string, slice, cast to integer
+        # Double Digit Number
+        elif self.mine_time < 100:
+            segs[1] = int(str(time)[0])
+            segs[2] = int(str(time)[1])
+        
+        # Triple Digit Number
+        elif self.mine_time < 1000:
+            segs[0] = int(str(time)[0])
+            segs[1] = int(str(time)[1])
+            segs[2] = int(str(time)[2])
+        
+        # Clear our timer image ID's and reset index
+        for i in range(len(self.mine_timer_ids)):
+            self.mine_timer.delete(self.mine_timer_ids[i])
+            self.mine_timer_ids[i] = None
+            
+        # Draw our timer segments
+        self.mine_timer_ids[0] = self.mine_timer.create_image(1, 1, 
+            image=self.sevenseg[segs[0]], 
+            anchor="nw")
+        self.mine_timer_ids[1] = self.mine_timer.create_image(14, 1, 
+            image=self.sevenseg[segs[1]], 
+            anchor="nw")
+        self.mine_timer_ids[2] = self.mine_timer.create_image(27, 1, 
+            image=self.sevenseg[segs[2]], 
+            anchor="nw")
+        
     def draw_grid(self):
         # Draw grid
         for n in range(self.field_size):
@@ -445,7 +548,6 @@ class MineSweeper:
                 self.field_btns[step].id = step
                 # Choose handler for what's under the clicked block
                 if self.field[y][x][0] == 'x':
-                    print("aaabbcccddkldsjf9399382")
                     self.field_btns[step].bind("<Button-1>", self.mine_click)
                 else:
                     self.field_btns[step].bind("<Button-1>", self.field_click)
@@ -867,8 +969,7 @@ class MineSweeper:
                     self.field[y][x] = [self.field[y][x], None]
                     
         self.draw_field()
-        
-        
+
+
 if __name__ == "__main__":
     ms = MineSweeper()
-    ms.mainloop()

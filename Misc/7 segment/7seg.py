@@ -44,10 +44,10 @@ class seg:
             int(num)
         except ValueError:
             raise ValueError("update_display only accepts int type")
-            
+        
         if len(str(num)) > 999:
             num = 999
-            
+        
         num_str = str(num)
         num_slice = [int(num_str[0]), int(num_str[1]), int(num_str[2])]
         

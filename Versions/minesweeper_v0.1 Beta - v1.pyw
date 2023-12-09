@@ -6,138 +6,18 @@ global debug
 debug = True
 
 
-class MineField_Obj:
-    """
-    [[[field_dirt, mask_id, block_id], ...],
-     [[0, mid, bid]]
-    ]
-    
-    field_dirt - 9: mine, 1-8: field analysis
-    mask_id - image id returned from Canvas.create_image() 
-    block_wdgt - widget reference of respective button covering field slot
-    """
-
-    field = [
-                [[0, None, None], [0, None, None], [0, None, None], 
-                 [0, None, None], [0, None, None], [0, None, None], 
-                 [0, None, None], [0, None, None], [0, None, None]
-                ],
-                [[0, None, None], [0, None, None], [0, None, None], 
-                 [0, None, None], [0, None, None], [0, None, None], 
-                 [0, None, None], [0, None, None], [0, None, None]
-                ],
-                [[0, None, None], [0, None, None], [0, None, None], 
-                 [0, None, None], [0, None, None], [0, None, None], 
-                 [0, None, None], [0, None, None], [0, None, None]
-                ],
-                [[0, None, None], [0, None, None], [0, None, None], 
-                 [0, None, None], [0, None, None], [0, None, None], 
-                 [0, None, None], [0, None, None], [0, None, None]
-                ],
-                [[0, None, None], [0, None, None], [0, None, None], 
-                 [0, None, None], [0, None, None], [0, None, None], 
-                 [0, None, None], [0, None, None], [0, None, None]
-                ],
-                [[0, None, None], [0, None, None], [0, None, None], 
-                 [0, None, None], [0, None, None], [0, None, None], 
-                 [0, None, None], [0, None, None], [0, None, None]
-                ],
-                [[0, None, None], [0, None, None], [0, None, None], 
-                 [0, None, None], [0, None, None], [0, None, None], 
-                 [0, None, None], [0, None, None], [0, None, None]
-                ],
-                [[0, None, None], [0, None, None], [0, None, None], 
-                 [0, None, None], [0, None, None], [0, None, None], 
-                 [0, None, None], [0, None, None], [0, None, None]
-                ],
-                [[0, None, None], [0, None, None], [0, None, None], 
-                 [0, None, None], [0, None, None], [0, None, None], 
-                 [0, None, None], [0, None, None], [0, None, None]
-                ],
-            ]
-
-    def __init__(self, field_size=9, minefield_wdgt):
-        self.field_size = field_size
-        self.minefield_wdgt = minefield_wdgt
-        pass
-        
-    def delete_mask(self, x, y):
-        # Attempt mask image deletion and handle exceptions
-        try:
-            field[y][x] 
-        
-    def delete_block(self, x, y):
-        # Attempt block widget destruction and handle exceptions
-        try:
-            field[y][x][2].destroy()
-        except IndexError:
-            raise IndexError("Minefield_Obj -> delete_block(): index out of range")
-        except AttributeError:
-            raise AttributeError: "Minefield_Obj -> delete_block(): expected attribute doesn't exist")
-        else:
-            return True
-            
-    def generate_field(self, field, size=None):
-        """generate_field() - Generate a clean field data structure
-        
-        - assumes that mask and block elements have already been destroyed."""
-        # Set default field size
-        if not size:
-            size = self.field_size
-            
-        field = []
-        for elem in range(size):
-            field.append([[0, None, None] for n in range(size)])
-            
-        return field
-        
-    def is_mine(self, x, y):
-        # If location is not int(), return false
-        try:    
-            int(field[y][x][0])
-        except ValueError:
-            return False
-            
-        # 9 flag == mine
-        if field[y][x][0] == 9:
-            return True
-        else:
-            return False
-        
-    def place_mine(self, x, y):
-        try:
-            self.field_size[y][x][0] = 9
-        except IndexError:
-            raise IndexError("Minefield_Obj -> place_mine(): list index out of range")
-            
-        return True
-        
-    def reset_field(self):
-        size = len(field)
-        
-        for y in range(size):
-            for x in range(size):
-                # Reset mine bit
-                field[y][x][0] = 0
-                
-                ## Memory Management
-                # Delete the mask overlay image
-                self.minefield_wdgt.delete(field[y][x][1])
-                # Delete clickable block widget
-                field[y][x][2].delete()
-                
-        self.generate_field(self.field_size)
-        
-
 
 class MineSweeper:
-    """ 
+    """ MineSweeper - GUI / Game Logic Object
     ToDo:
+        - Organize methods by functional purpose, alphabetically
         - Experiment with using an image class for a generalized definition
           of required images used.
         - High Score system
         - Rename images s/bomb/mine/g
         - Manually populate minefield from Game and analyze / store
+        - Make generalized function for 7 segment display updating. 
+            EG. set_display('timer', 30) - Works on both displays
     NOTES:
         - Make sure the game reset destroy()'s all the button widgets/bindings
         - What's not your sweep? Minesweeper. 
@@ -152,10 +32,15 @@ class MineSweeper:
         """ 
         Image objects
         """
-        path = os.getcwd()
+        #path = os.getcwd()
+        slc = os.getcwd().split("\\")[0:8]
+        path = ""
+        for i in slc:
+            path += i + "\\"
+        
         
         # 7 Segment Display
-        self.sevenseg = [n for n in range(10)]
+        self.sevenseg = [n for n in range(11)]
         self.sevenseg[0]= tk.PhotoImage(file=fr"{path}\img\7_segment\0.gif")
         self.sevenseg[1] = tk.PhotoImage(file=fr"{path}\img\7_segment\1.gif")
         self.sevenseg[2] = tk.PhotoImage(file=fr"{path}\img\7_segment\2.gif")
@@ -166,13 +51,15 @@ class MineSweeper:
         self.sevenseg[7] = tk.PhotoImage(file=fr"{path}\img\7_segment\7.gif")
         self.sevenseg[8] = tk.PhotoImage(file=fr"{path}\img\7_segment\8.gif")
         self.sevenseg[9] = tk.PhotoImage(file=fr"{path}\img\7_segment\9.gif")
+        self.sevenseg[10] = tk.PhotoImage(file=fr"{path}\img\7_segment\-.gif")
         
+        # Mine Face... is a handsome one
         self.smile_face = tk.PhotoImage(file=fr"{path}\img\smile_face.gif")
         self.smile_face_pressed = tk.PhotoImage(file=fr"{path}\img\smile_face_pressed.gif")
         self.wow_face = tk.PhotoImage(file=fr"{path}\img\wow_face.gif")
         self.lose_face = tk.PhotoImage(file=fr"{path}\img\lose_face.gif")
         self.win_face = tk.PhotoImage(file=fr"{path}\img\win_face.gif")
-        
+
         # Mine cover blocks
         self.blank_block = tk.PhotoImage(file=fr"{path}\img\blank_block.gif")
         self.flag_block = tk.PhotoImage(file=fr"{path}\img\flag.gif")
@@ -198,8 +85,21 @@ class MineSweeper:
         """
         Environment elements
         """
+        if debug:
+            self.root.geometry("164x202+350+468")
+        else:
+            self.root.geometry("164x202")
+        
+        # UI details
+        self.dark_edge = "#808080"
+        self.transient_edge = "#C0C0C0"
+        self.light_edge = "#FFFFFF"
+        
         self.mine_pxs = 16
         self.field_size = 9
+        
+        self.mines = 10
+        self.mines_remaining = self.mines
         
         # Mine Border Calc - DO NOT CHANGE
         self.mine_border = 4
@@ -211,11 +111,19 @@ class MineSweeper:
         # Field adjusted border
         self.field_width_bd = self.field_width + (self.mine_border * 2)
         self.field_height_bd = self.field_width_bd
-        
-        self.root.geometry("164x202")
-        
+
+        # Field declaration
         self.field = []
         self.field_imgs = []
+        
+        # Mine Counter image ID index
+        self.mine_cnt_ids = [None, None, None]
+        
+        # Timer basis
+        self.mine_time = 0
+        self.mine_time_limit = 999
+        self.mine_timer_bool = False
+        self.mine_timer_ids = [None for i in range(3)]
         
         """
         MineSweeper()
@@ -226,6 +134,8 @@ class MineSweeper:
         self.gen_field_matrix(9)
         self.draw_blocks()
         #self.clear_field()
+        
+        self.mainloop()
         
     def __gui__(self):
         self.root.config(background="#C0C0C0")
@@ -240,6 +150,10 @@ class MineSweeper:
             self.help = tk.Menu(self.menubar, tearoff=0)
             self.help.add_command(label="Or Another", command="")
             self.menubar.add_cascade(label="Help", menu=self.help)
+            """ Help Dialog:
+                - EasterEgg?
+                - It aslways seems impossible until it's done. - Nelson Mandela
+            """
         
         if debug:
             self.debug = tk.Menu(self.menubar, tearoff=0)
@@ -247,6 +161,9 @@ class MineSweeper:
             self.debug.add_command(label="toggle_buttons()", command=self.toggle_buttons)
             self.debug.add_command(label="flag_all()", command=self.flag_all)
             self.debug.add_command(label="question_all()", command=self.question_all)
+            self.debug.add_separator()
+            self.debug.add_command(label="mine++", command=lambda : self.set_mine_count(1))
+            self.debug.add_command(label="mine--", comman=lambda : self.set_mine_count(-1))
             self.menubar.add_cascade(label="Debug", menu=self.debug)
             
             self.field_menu = tk.Menu(self.menubar, tearoff=0)
@@ -279,22 +196,6 @@ class MineSweeper:
         
         self.root.config(menu=self.menubar)
         
-        
-        ### ScoreBoard ###
-        self.scoreboard_frm = tk.Frame(self.root)
-        self.scoreboard_frm.pack(side="top")
-        
-        self.scoreboard = tk.Canvas(self.scoreboard_frm, width=self.field_width,
-            height=33, border=0, background="black")
-        self.scoreboard.pack()
-        
-        #self.mine_cnt = tk.Canvas(self.scoreboard, )
-        
-        #self.mine_face = 
-        
-        #self.mine_timer = 
-        
-        
         ### MineField ###
         # Border
         self.minefield_bd_frm = tk.Frame(self.root, border=self.mine_border, 
@@ -305,7 +206,7 @@ class MineSweeper:
             height=self.field_height_bd, 
             width=self.field_width_bd, 
             background="#C0C0C0", 
-            border=0, highlightthickness=0)
+            bd=0, highlightthickness=0)
         self.minefield_bd.pack(fill="none", expand=False)
         
         self.draw_mine_border()
@@ -315,15 +216,96 @@ class MineSweeper:
             height=self.field_height, 
             width=self.field_width, 
             background="#C0C0C0",
-            border=0, highlightthickness=0)
+            bd=0, highlightthickness=0)
         self.minefield_bd.create_window(3, 3, anchor="nw", window=self.minefield)
         
+        ### ScoreBoard ###
+        self.scoreboard_frm = tk.Frame(self.root, highlightthickness=0)
+        self.scoreboard_frm.pack(side="bottom")
+        
+        self.scoreboard = tk.Canvas(self.scoreboard_frm, width=150,
+            height=37, highlightthickness=0, background="#C0C0C0")
+        self.scoreboard.pack()
+        
+        self.draw_scoreboard_border()
+        
+        # Mine Cnt
+        self.mine_cnt = tk.Canvas(self.scoreboard, height=25, width=41,
+            bd=0, highlightthickness=0, background="#C0C0C0")
+        self.scoreboard.create_window(9, 8, anchor="nw", window=self.mine_cnt)
+        
+        self.set_mine_count()
+        
+        # Mine Face
+        self.mine_face = tk.Label(self.root, image=self.smile_face, 
+            bd=0, highlightthickness=0)
+        self.scoreboard.create_window(62, 6, anchor="nw", window=self.mine_face)
+        
+        # Mine Timer
+        self.mine_timer = tk.Canvas(self.scoreboard, height=25, width=41,
+            bd=0, highlightthickness=0, background="#C0C0C0")
+        self.scoreboard.create_window(102, 8, anchor="nw", window=self.mine_timer)
+        
+        self.draw_7seg_border()
+        self.set_time(0)
+        
     def __events__(self):
-        #self.root.bind("<Motion>", lambda s: print(self.root.geometry()))
-        None
-         
+        self.mine_face.bind("<ButtonPress-1>", self.mine_face_click)
+        self.mine_face.bind("<ButtonRelease-1>", self.mine_face_release)
+        
+    def set_mine_face(self, face="smile"):
+        """Faces:
+            - smile_face
+            - smile_face_pressed
+            - wow_face
+            - lose_face
+            - win_face
+        """
+        
+        if face == "smile":
+            self.mine_face.config(image=self.smile_face)
+            
+        elif face == "pressed":
+            self.mine_face.config(image=self.smile_face_pressed)
+            
+        elif face == "wow":
+            self.mine_face.config(image=self.wow_face)
+            
+        elif face == "lose":
+            self.mine_face.config(image=self.lose_face)
+            
+        elif face == "win":
+            self.mine_face.config(image=self.win_face)
+    
+    def mine_face_click(self, event):
+        self.set_mine_face("pressed")
+        self.mine_timer_bool = False
+    
+    def mine_face_release(self, event):
+        #print(f"DEBUG: mine_face_release: PRE: \n{self.print_field()}")
+        
+        self.clear_blocks()
+        self.draw_blocks()
+
+        self.gen_field_matrix(self.mines)
+        self.gen_mines()
+        self.analyze_field()
+        self.draw_field()
+
+        self.set_mine_count()
+        self.set_time(0)
+
+        self.set_mine_face("smile")
+
+        #print(f"DEBUG: mine_face_release: POST: \n{self.print_field()}")
+        
     def field_click(self, event):
         btn = self.field_btns[event.widget.id]
+        
+        # Start timer
+        if not self.mine_timer_bool:
+            self.mine_timer_bool = True
+            self.timer_handle()
         
         if btn.flag == 1:
             return
@@ -340,59 +322,253 @@ class MineSweeper:
 
         elif event.widget.flag == 1:
             event.widget.config(image=self.flag_block)
-            self.field[event.widget.y_coord][event.widget.x_coord][1] = True
+            # draw_blocks_new dev feature
+            #self.field[event.widget.y_coord][event.widget.x_coord][1] = True
+            self.set_mine_count(-1)
 
         elif event.widget.flag == 2:
             event.widget.config(image=self.question_block)
-            self.field[event.widget.y_coord][event.widget.x_coord][1] = False
-
+            #self.field[event.widget.y_coord][event.widget.x_coord][1] = False
+            self.set_mine_count(1)
+            
         else:
             print("ERROR: field_flag_click(): unhandled exception")
 
-    def mine_clicked(self):
+    def mine_click(self, event=None):
+        """
+        - show wrong flags
+        - show mines
+        - change face
+        """
+        event.widget.destroy()
         print("GAME OVER")
         
     def draw_scoreboard_border(self):
-        pass
+        # Top Edge
+        self.scoreboard.create_line(0, 0, 148, 0, fill=self.dark_edge)
+        self.scoreboard.create_line(0, 1, 148, 1, fill=self.dark_edge)
+        
+        # Top Right Corner
+        self.scoreboard.create_line(148, 0, 149, 0, fill=self.dark_edge)
+        self.scoreboard.create_line(149, 0, 150, 0, fill=self.transient_edge)
+        self.scoreboard.create_line(148, 1, 149, 1, fill=self.transient_edge)
+        self.scoreboard.create_line(149, 1, 150, 1, fill=self.light_edge)
+        
+        # Right Edge
+        self.scoreboard.create_line(148, 2, 149, 150, fill=self.light_edge)
+        self.scoreboard.create_line(149, 2, 150, 150, fill=self.light_edge)
+        
+        # Bottom Edge
+        self.scoreboard.create_line(2, 35, 150, 35, fill=self.light_edge)
+        self.scoreboard.create_line(2, 36, 150, 36, fill=self.light_edge)
+        
+        # Left Edge
+        self.scoreboard.create_line(0, 0, 0, 35, fill=self.dark_edge)
+        self.scoreboard.create_line(1, 0, 1, 35, fill=self.dark_edge)
+
+        # Bottom Left Corner
+        self.scoreboard.create_line(0, 35, 0, 36, fill=self.dark_edge)
+        self.scoreboard.create_line(0, 36, 0, 37, fill=self.transient_edge)
+        self.scoreboard.create_line(1, 35, 1, 36, fill=self.transient_edge)
+        self.scoreboard.create_line(1, 36, 1, 37, fill=self.light_edge)
+        
+    def draw_7seg_border(self):
+        ## Mine cnt 
+        # Top Edge
+        self.mine_cnt.create_line(0, 0, 40, 0, fill=self.dark_edge)
+        
+        # Right Edge
+        self.mine_cnt.create_line(40, 1, 40, 24, fill=self.light_edge)
+        
+        # Bottom Edge
+        self.mine_cnt.create_line(41, 24, 0, 24, fill=self.light_edge)
+        
+        # Left Edge
+        self.mine_cnt.create_line(0, 0, 0, 24, fill=self.dark_edge)
+        
+        
+        ## Mine Timer
+        # Top Edge
+        self.mine_timer.create_line(0, 0, 40, 0, fill=self.dark_edge)
+        
+        # Right Edge
+        self.mine_timer.create_line(40, 1, 40, 24, fill=self.light_edge)
+        
+        # Bottom Edge
+        self.mine_timer.create_line(41, 24, 0, 24, fill=self.light_edge)
+        
+        # Left Edge
+        self.mine_timer.create_line(0, 0, 0, 24, fill=self.dark_edge)
         
     def draw_mine_border(self):
-        # TODO: Make this dynamnically populated
-        dark_edge = "#808080"
-        transient_edge = "#c0c0c0"
-        light_edge = "#FFFFFF"
-        
         # Top Edge
-        self.minefield_bd.create_line(0, 0, 149, 0, fill=dark_edge)
-        self.minefield_bd.create_line(149, 0, 150, 0, fill=transient_edge)
+        self.minefield_bd.create_line(0, 0, 149, 0, fill=self.dark_edge)
+        self.minefield_bd.create_line(149, 0, 150, 0, fill=self.transient_edge)
         
-        self.minefield_bd.create_line(0, 1, 148, 1, fill=dark_edge)
-        self.minefield_bd.create_line(148, 1, 149, 1, fill=transient_edge)
-        self.minefield_bd.create_line(149, 1, 150, 1, fill=light_edge)
+        self.minefield_bd.create_line(0, 1, 148, 1, fill=self.dark_edge)
+        self.minefield_bd.create_line(148, 1, 149, 1, fill=self.transient_edge)
+        self.minefield_bd.create_line(149, 1, 150, 1, fill=self.light_edge)
         
-        self.minefield_bd.create_line(0, 2, 147, 2, fill=dark_edge)
-        self.minefield_bd.create_line(147, 2, 148, 2, fill=transient_edge)
-        self.minefield_bd.create_line(148, 2, 150, 2, fill=light_edge)
+        self.minefield_bd.create_line(0, 2, 147, 2, fill=self.dark_edge)
+        self.minefield_bd.create_line(147, 2, 148, 2, fill=self.transient_edge)
+        self.minefield_bd.create_line(148, 2, 150, 2, fill=self.light_edge)
 
         # Left / Right Edge Fill
-        self.minefield_bd.create_line(0, 3, 0, 147, fill=dark_edge)
-        self.minefield_bd.create_line(1, 3, 1, 147, fill=dark_edge)
-        self.minefield_bd.create_line(2, 3, 2, 147, fill=dark_edge)
+        self.minefield_bd.create_line(0, 3, 0, 147, fill=self.dark_edge)
+        self.minefield_bd.create_line(1, 3, 1, 147, fill=self.dark_edge)
+        self.minefield_bd.create_line(2, 3, 2, 147, fill=self.dark_edge)
         
-        self.minefield_bd.create_line(147, 3, 147, 150, fill=light_edge)
-        self.minefield_bd.create_line(148, 3, 148, 150, fill=light_edge)
-        self.minefield_bd.create_line(149, 3, 149, 150, fill=light_edge)
+        self.minefield_bd.create_line(147, 3, 147, 150, fill=self.light_edge)
+        self.minefield_bd.create_line(148, 3, 148, 150, fill=self.light_edge)
+        self.minefield_bd.create_line(149, 3, 149, 150, fill=self.light_edge)
         
         #Bottom Edge
-        self.minefield_bd.create_line(0, 147, 2, 147, fill=dark_edge)
-        self.minefield_bd.create_line(2, 147, 3, 147, fill=transient_edge)
-        self.minefield_bd.create_line(3, 147, 149, 147, fill=light_edge)
+        self.minefield_bd.create_line(0, 147, 2, 147, fill=self.dark_edge)
+        self.minefield_bd.create_line(2, 147, 3, 147, fill=self.transient_edge)
+        self.minefield_bd.create_line(3, 147, 149, 147, fill=self.light_edge)
         
-        self.minefield_bd.create_line(0, 148, 1, 148, fill=dark_edge)
-        self.minefield_bd.create_line(1, 148, 2, 148, fill=transient_edge)
-        self.minefield_bd.create_line(2, 148, 149, 148, fill=light_edge)
+        self.minefield_bd.create_line(0, 148, 1, 148, fill=self.dark_edge)
+        self.minefield_bd.create_line(1, 148, 2, 148, fill=self.transient_edge)
+        self.minefield_bd.create_line(2, 148, 149, 148, fill=self.light_edge)
         
-        self.minefield_bd.create_line(0, 149, 1, 149, fill=transient_edge)
-        self.minefield_bd.create_line(1, 149, 149, 149, fill=light_edge)
+        self.minefield_bd.create_line(0, 149, 1, 149, fill=self.transient_edge)
+        self.minefield_bd.create_line(1, 149, 149, 149, fill=self.light_edge)
+        
+    def set_mine_count(self, step=0):
+        """
+        TODO: Make this dynamically update per only what needs changed in the 
+                7 seg display
+        """
+        try:
+            int(step)
+        except ValueError:
+            raise ValueError("Minesweeper -> set_mine_count(step): expects integer, other given")
+        
+        if step == 0:
+            self.mines_remaining = self.mines
+            
+            
+        self.mines_remaining += step
+        
+        if self.mines_remaining > 999:
+            self.mines_remaining = 000
+            
+        # Delete previous images
+        for i in range(len(self.mine_cnt_ids)):
+            if self.mine_cnt_ids[i] != None:
+                self.mine_cnt.delete(i)
+                self.mine_cnt_ids[i] = None
+            
+        # Seperate our intergar
+        _str = str(self.mines_remaining)
+
+        # Properly pad with 0's
+        if self.mines_remaining < -9:
+            mines = [10, int(_str[1]), int(_str[2])]
+            
+        elif self.mines_remaining < 0:
+            mines = [10, 0, int(_str[1])]
+            
+        elif self.mines_remaining == 0:
+            mines = [0, 0, 0]
+            
+        elif self.mines_remaining < 10:
+            mines = [0, 0, int(_str[0])]
+        
+        elif self.mines_remaining > 99:
+            mines = [int(_str[0]), int(_str[1]), int(_str[2])]
+            
+        elif self.mines_remaining > 9:
+            mines = [0, int(_str[0]), int(_str[1])]
+            
+        else:
+            mines = [10, 10, 10]
+        
+        # Store img ID and assign image respectively
+        self.mine_cnt_ids[0] = self.mine_cnt.create_image(1, 1, 
+            image=self.sevenseg[mines[0]], anchor="nw")
+        self.mine_cnt_ids[1] = self.mine_cnt.create_image(14, 1, 
+            image=self.sevenseg[mines[1]], anchor="nw")
+        self.mine_cnt_ids[2] = self.mine_cnt.create_image(27, 1, 
+            image=self.sevenseg[mines[2]], anchor="nw")
+            
+        return True
+            
+    def timer_handle(self, time=None):
+        """ Handle the timer hook to mainloop() and update the timer display"""
+        # Stop timing loop if past time limit
+        if self.mine_time >= self.mine_time_limit:
+            if debug: print("MineSweeper -> timer_handle(): broke timer loop due to exceedance")
+            return
+        
+        # Ensure only int on provided time
+        if time != None:
+            try:
+                int(time)
+            except TypeError:
+                self.mine_time=0
+                if debug: print("Internal Error: Minesweeper -> timer_handle(): given argument type other than int")
+        
+        # Update time and display
+        self.mine_time += 1
+        self.set_time(self.mine_time)
+        
+        # Attach our timer hook to mainloop()
+        if self.mine_timer_bool:
+            self.root.after(1000, self.timer_handle)
+        
+    def set_time(self, time=None):
+        """TODO: Make this dynamically update the display; change the _ids list
+           to include numbers of displayed segments
+           TODO: Create is_int() method"""
+            
+        # Set argument default value to self.mine_time
+        # Python does not allow self.vars to be argument defaults to methods
+        # So if None: time = self.mine_time
+        if time != None:
+            # Ensure provided time is within range
+            if time > self.mine_time_limit or time < 0:
+                if debug: print("Limit Exceedance: Minesweeper -> set_time(): provided time argument is outside time limit")
+                self.mine_time = 999
+            else:
+                self.mine_time = time
+                
+        ## Set mine time
+        # integer's lack lefthand 0's, so we define and pad respectively
+        segs = [0, 0, 0]
+        
+        # Single Digit Number
+        if self.mine_time < 10:
+            segs[2] = self.mine_time
+        
+        ## digits > 9 require string casting for individualizing the integer
+        # Cast integer type to string, slice, cast to integer
+        # Double Digit Number
+        elif self.mine_time < 100:
+            segs[1] = int(str(time)[0])
+            segs[2] = int(str(time)[1])
+        
+        # Triple Digit Number
+        elif self.mine_time < 1000:
+            segs[0] = int(str(time)[0])
+            segs[1] = int(str(time)[1])
+            segs[2] = int(str(time)[2])
+        
+        # Clear our timer image ID's and reset index
+        for i in range(len(self.mine_timer_ids)):
+            self.mine_timer.delete(self.mine_timer_ids[i])
+            self.mine_timer_ids[i] = None
+            
+        # Draw our timer segments
+        self.mine_timer_ids[0] = self.mine_timer.create_image(1, 1, 
+            image=self.sevenseg[segs[0]], 
+            anchor="nw")
+        self.mine_timer_ids[1] = self.mine_timer.create_image(14, 1, 
+            image=self.sevenseg[segs[1]], 
+            anchor="nw")
+        self.mine_timer_ids[2] = self.mine_timer.create_image(27, 1, 
+            image=self.sevenseg[segs[2]], 
+            anchor="nw")
         
     def draw_grid(self):
         # Draw grid
@@ -407,7 +583,7 @@ class MineSweeper:
                 fill="#808080")
             
     def draw_blocks(self):
-        # Create empty field_btns index
+        # Cover mine field with blocks
         self.field_btns = [n for n in range(self.field_size * self.field_size)]
         # Canvas/Button place offset
         field_x, field_y = 0, 0
@@ -419,25 +595,30 @@ class MineSweeper:
                 self.field_btns[step] = tk.Label(self.minefield, 
                     image=self.blank_block, highlightthickness=0, bd=0)
                     
-                # Populate widget information
                 self.field_btns[step].id = step
+                # Choose handler for what's under the clicked block
+                if self.field[y][x][0] == 'x':
+                    self.field_btns[step].bind("<Button-1>", self.mine_click)
+                else:
+                    self.field_btns[step].bind("<Button-1>", self.field_click)
+                    
+                self.field_btns[step].bind("<Button-3>", self.field_flag_click)
                 self.field_btns[step].flag = 0
                 
-                # Bind widget events
-                self.field_btns[step].bind("<Button-1>", self.field_click)
-                self.field_btns[step].bind("<Button-3>", self.field_flag_click)
-
-                # Place button widget on Canvas
                 self.field_btns[step].place(x=field_x, 
                     y=field_y)
-                    
-                # Offset and increment
+                # Offset x
                 field_x += self.mine_pxs
                 step += 1
                 
             field_x = 0
             field_y += self.mine_pxs
                 
+    def clear_blocks(self):
+        # TODO: What is the best way to incorporate this functionality?
+        for block in self.field_btns:
+            block.destroy()
+        
     def draw_blocks_new(self):
         # Canvas/Button place offset
         field_x, field_y = 0, 0
@@ -473,7 +654,18 @@ class MineSweeper:
         
     def gen_field_matrix(self, size):
         """
-
+        field = [[[0, None], [0, None], [0, None],
+                 [[0, None], [0, None], [0, None],
+                 [[0, None], [0, None], [0, None]
+                ]
+        
+        field[y][x][0] = 0 - Minefield Element (Mine or number)
+        field[y][x][1] = None - Accessory Place holder for mine_flags, img id   
+                            of respective grid image with flag
+                            
+        0 - Blank
+        x - Mine
+        1-8 - Analysis
         """
         self.field = []
         
@@ -489,7 +681,7 @@ class MineSweeper:
         
         return [x, y]
         
-    def gen_mines(self, qty):
+    def gen_mines(self, qty=10):
         self.clear_field()
         
         for n in range(qty):
@@ -497,15 +689,7 @@ class MineSweeper:
             
             if self.field[y][x] != 'x':
                 self.field[y][x][0] = 'x'
-    
-    def field_increment(self, x, y):
-        try:
-            int(self.field[y][x])
-        except ValueError:
-            raise Exception("field_increment(): error: attempted to increment mine")
-            
-        self.field[y][x] += 1
-        
+
     def is_mine(self, x, y):
         """ If x in grid and is 'x' return True, False otherwise"""
         try:
@@ -572,6 +756,9 @@ class MineSweeper:
                     if not self.is_mine(x+1, y+1) and self.in_field(x+1, y+1):
                         self.field[y+1][x+1][0] += 1
 
+    def sweep_analyze(self):
+        pass
+        
     def clear_field_imgs(self):
         """ Clear all images from the field"""
         for id in self.field_imgs:
@@ -642,6 +829,9 @@ class MineSweeper:
         
     """ DEBUG METHODS """
     def toggle_buttons(self):
+        self.mines_remaining = self.mines
+        self.set_mine_count(0)
+        
         try:
             self.toggle_buttons_debug_flip
         except:
@@ -832,8 +1022,7 @@ class MineSweeper:
                     self.field[y][x] = [self.field[y][x], None]
                     
         self.draw_field()
-        
-        
+
+
 if __name__ == "__main__":
     ms = MineSweeper()
-    ms.mainloop()

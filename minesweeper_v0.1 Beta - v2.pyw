@@ -1,4 +1,14 @@
 """
+EasterEgg:
+- MineCount - If you view help after you have won it will give the count of times
+  'mine' is used in the application code. If loss, mine application will NOT give
+  mine count of mine useage in mine mine application. Mine.
+    - Hidden button appears, click, mines propogate field with inverted colors?
+    - Shows famous quote in statusbar, quite possibly from a database hosted on 
+      my blinkenshell account?
+    - Mine Glider works across the field
+    - Start rotating images in a pattern 
+
 TODO:
 - are Minefield_Obj['mine_coords'] used for anything or excessive?
 - Make certain all img's are properly removed!
@@ -83,7 +93,7 @@ class Minefield_Obj:
                     'img_id' : None, 
                     'mask_id': None, 
                     'block_wdgt': None, 
-                    'block_state': None})
+                    'block_state': 'blank'})
             self.field.append(row)
             row = []
         
@@ -274,7 +284,7 @@ class MineSweeper:
             self.menubar.add_cascade(label="File", menu=self.file)
             
             self.help = tk.Menu(self.menubar, tearoff=0)
-            self.help.add_command(label="Or Another", command="")
+            self.help.add_command(label="About Minesweeper...", command="")
             self.menubar.add_cascade(label="Help", menu=self.help)
             """ Help Dialog:
                 - EasterEgg?
@@ -283,6 +293,7 @@ class MineSweeper:
         
         if debug:
             self.debug = tk.Menu(self.menubar, tearoff=0)
+            self.debug.add_command(label="reset_game()", command=self.reset_game)
             self.debug.add_separator()
             self.menubar.add_cascade(label="Debug", menu=self.debug)
             
@@ -373,11 +384,16 @@ class MineSweeper:
 
     def mine_face_press(self, event=None):
         self.mine_face.config(image=self.smile_face_pressed)
+        
+        # Stop our timer
+        self.mine_timer_bool = False
         pass
 
     def mine_face_release(self, event=None):
         self.mine_face.config(image=self.smile_face)
-        pass
+        
+        # Reset the game
+        self.reset_game()
 
     def minefield_btn1_press(self, event=None):
         if debug:
@@ -391,6 +407,11 @@ class MineSweeper:
         if debug:
             print("btn1_release")
         
+        # Only start mine timer if it isn't running
+        if not self.mine_timer_bool:
+            self.mine_timer_bool = True
+            self.timer_handle()
+        
         # Delete the field mask
         # TODO: Branch this to its own method?
         yx = event.widget.yx_strap
@@ -402,6 +423,50 @@ class MineSweeper:
     def minefield_btn3_press(self, event=None):
         if debug:
             print("btn3_press")
+            
+        # unstrap our widget-strap
+        yx = event.widget.yx_strap
+        
+        # Define our state values for condition
+        if self.mf.field[yx[0]][yx[1]]['block_state'] == 'blank':
+            # set blank state
+            img = self.flag_block
+            state = 'flag'
+            
+            # Flags are not interactive, so unbind the Left Click Press event
+            # TODO: make this generalized for cleanliness of code
+            self.mf.field[yx[0]][yx[1]]['block_wdgt'].unbind("<ButtonPress-1>")
+            self.mf.field[yx[0]][yx[1]]['block_wdgt'].unbind("<ButtonRelease-1>")
+            
+            # Deincrement the mine counter
+            self.set_mine_count(-1)
+        
+        elif self.mf.field[yx[0]][yx[1]]['block_state'] == 'flag':
+            # Set flag state
+            img = self.question_block
+            state = 'question'
+            
+            # Rebind the button press event
+            self.mf.field[yx[0]][yx[1]]['block_wdgt'].bind("<ButtonPress-1>", 
+                self.minefield_btn1_press)
+            self.mf.field[yx[0]][yx[1]]['block_wdgt'].bind("<ButtonRelease-1>", 
+                self.minefield_btn1_release)
+                
+            # Increment the mine counter
+            self.set_mine_count(1)
+            
+        elif self.mf.field[yx[0]][yx[1]]['block_state'] == 'question':
+            # Set question state
+            img = self.blank_block
+            state = 'blank'
+            
+        # Something isn't right if this happens, raise unhandled exception
+        else:
+            raise Exception("Minesweeper() -> minefield_btn3_press(): unhandled exception raised")
+            
+        # Set our defined values for Blocks and minefield state
+        event.widget.config(image=img)
+        self.mf.field[yx[0]][yx[1]]['block_state'] = state
         
     def minefield_btn3_release(self, event=None):
         if debug:
@@ -519,7 +584,7 @@ class MineSweeper:
 
     """ UI Methods """
     def set_mine_count(self, step=0):
-        """
+        """ Increment the mine count by argument "step"
         TODO: Make this dynamically update per only what needs changed in the 
                 7 seg display
         """
@@ -592,12 +657,13 @@ class MineSweeper:
             except TypeError:
                 self.mine_time=0
                 if debug: print("Internal Error: Minesweeper -> timer_handle(): given argument type other than int")
-        
+
         # Update time and display
-        self.mine_time += 1
         self.set_time(self.mine_time)
+        self.mine_time += 1
         
         # Attach our timer hook to mainloop()
+        # only if the timer_bool is True
         if self.mine_timer_bool:
             self.root.after(1000, self.timer_handle)
 
@@ -655,8 +721,22 @@ class MineSweeper:
             anchor="nw")
 
     """ Field Methods """
-    def place_blocks(self):
-        pass
+    def place_mines(self):
+        """ place_mines() - Randomly generate and assing mines to the field""" 
+        # Iterate over the required mine quantity
+        for i in range(self.mines):
+            # Generate random mine location
+            y = random.randrange(0, self.field_size - 1)
+            x = random.randrange(0, self.field_size - 1)
+            # If duplicate location, regenerate until not
+            while self.mf.is_mine(x, y):
+                y = random.randrange(0, self.field_size - 1)
+                x = random.randrange(0, self.field_size - 1)
+
+            # Place the generated mine
+            self.mf.place_mine(x, y)
+            
+        return True
 
     def mask_field(self):
         """ Overlay 0.gif #C0C0C0 block image over every field element that has
@@ -677,23 +757,6 @@ class MineSweeper:
             x_offset = 1
             y_offset += self.mine_pxs
 
-        return True
-        
-    def place_mines(self):
-        """ place_mines() - Randomly generate and assing mines to the field""" 
-        # Iterate over the required mine quantity
-        for i in range(self.mines):
-            # Generate random mine location
-            y = random.randrange(0, self.field_size - 1)
-            x = random.randrange(0, self.field_size - 1)
-            # If duplicate location, regenerate until not
-            while self.mf.is_mine(x, y):
-                y = random.randrange(0, self.field_size - 1)
-                x = random.randrange(0, self.field_size - 1)
-
-            # Place the generated mine
-            self.mf.place_mine(x, y)
-            
         return True
 
     def analyze_field(self):
@@ -737,9 +800,6 @@ class MineSweeper:
                     # Down and Right
                     if not self.mf.is_mine(x+1, y+1) and self.mf.in_field(x+1, y+1):
                         self.mf.field[y+1][x+1]['mine'] += 1
-
-    def sweep_field(self):
-        pass
 
     def draw_field(self):
         img_src = None
@@ -788,7 +848,6 @@ class MineSweeper:
                 if img_src:
                     iid = self.minefield.create_image(field_x, field_y, 
                         image=img_src, anchor="nw")
-                    print(iid)
                     self.mf.field[y][x]['img_id'] = iid
                 
                 # Offset x
@@ -839,12 +898,15 @@ class MineSweeper:
                 
                 ## Bind the event handlers
                 # Block Left click Press and Release events
+                # This bind is unbound in minefield_btn3_press() & rebound
+                # TODO: make this generalized for cleanliness of code
                 self.mf.field[y][x]['block_wdgt'].bind("<ButtonPress-1>", 
                     self.minefield_btn1_press)
                 self.mf.field[y][x]['block_wdgt'].bind("<ButtonRelease-1>", 
                     self.minefield_btn1_release)
                     
                 # Block Right click Press and Release events
+
                 self.mf.field[y][x]['block_wdgt'].bind("<ButtonPress-3>", 
                     self.minefield_btn3_press)
                 self.mf.field[y][x]['block_wdgt'].bind("<ButtonRelease-3>", 
@@ -855,6 +917,27 @@ class MineSweeper:
             
             field_x = 0
             field_y += self.mine_pxs
+
+    def sweep_field(self):
+        pass
+
+    def reset_game(self):
+        """ Reset the game"""
+        self.clear_field()
+        
+        # Update Scoreboard
+        self.set_mine_count()
+        self.mine_timer_bool = False
+        self.set_time(0)
+        
+        ## DO NOT CHANGE ORDER ##
+        # Order is specific for the purpose of image layers and which is 
+        # on top/bottom
+        self.place_mines()
+        self.analyze_field()
+        self.draw_field()
+        self.mask_field()
+        self.draw_blocks()
 
     def mainloop(self):
         self.root.mainloop()
@@ -909,9 +992,9 @@ class MineSweeper:
             
     def print_fieldObj(self):
         for y in range(len(self.mf.field)):
-            print(f"Column: {y}")
+            print(f"Row: {y}")
             for x in range(len(self.mf.field)):
-                print(f"Row: {x} - {self.mf.field[y][x]}")
+                print(f"Column: {x} - {self.mf.field[y][x]}")
             
             print()
         

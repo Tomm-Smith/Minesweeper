@@ -6,6 +6,7 @@ Minesweeper - A game for mine janitors.
 import tkinter as tk
 import os
 import random
+import math
 
 global debug
 debug = True
@@ -21,7 +22,7 @@ class Minefield_Obj:
     dict - {'mine': 0, 
             'mine_coords': [0, 0], (y, x)
             'img_id' : None,
-            'mask_id': None,
+            'tag_id': None,
             'block_wdgt': None,
             'block_state': None}
 
@@ -32,30 +33,10 @@ class Minefield_Obj:
                      - 1-8 - Mine Proximity
         mine_coords: - [x, y] coordinates for mine location on field
         img_id:      - Image id of item on the minefield, None otherwise
-        mask_id:     - Numeric ID of instantiated mask image hiding the mines 
+        tag_id:     - Numeric ID of instantiated mask image hiding the mines
                        until click_release, None otherwise
         block_wdgt:  - Individual Widget of block covering minefield, None otherwise
         block_state: - State of Field Block, EG. 'blank', 'flag', 'question'
-
-
-    3x3 Matrix Default Reference
-    field = [
-             [
-              {'mine': 0, 'mine_coords': [0, 0], 'img_id' : None, 'mask_id': None, 'block_wdgt': None, 'block_state': None},
-              {'mine': 0, 'mine_coords': [0, 0], 'img_id' : None, 'mask_id': None, 'block_wdgt': None, 'block_state': None},
-              {'mine': 0, 'mine_coords': [0, 0], 'img_id' : None, 'mask_id': None, 'block_wdgt': None, 'block_state': None}
-             ],
-             [
-              {'mine': 0, 'mine_coords': [0, 0], 'img_id' : None, 'mask_id': None, 'block_wdgt': None, 'block_state': None},
-              {'mine': 0, 'mine_coords': [0, 0], 'img_id' : None, 'mask_id': None, 'block_wdgt': None, 'block_state': None},
-              {'mine': 0, 'mine_coords': [0, 0], 'img_id' : None, 'mask_id': None, 'block_wdgt': None, 'block_state': None}
-             ],
-             [
-              {'mine': 0, 'mine_coords': [0, 0], 'img_id' : None, 'mask_id': None, 'block_wdgt': None, 'block_state': None},
-              {'mine': 0, 'mine_coords': [0, 0], 'img_id' : None, 'mask_id': None, 'block_wdgt': None, 'block_state': None},
-              {'mine': 0, 'mine_coords': [0, 0], 'img_id' : None, 'mask_id': None, 'block_wdgt': None, 'block_state': None}
-             ]
-            ]
     """
     def __init__(self, field_size):
         self.field_size = field_size
@@ -74,7 +55,7 @@ class Minefield_Obj:
                 row.append({'mine': 0, 
                     'mine_coords': [0, 0], 
                     'img_id' : None, 
-                    'mask_id': None, 
+                    'tag_id': None, 
                     'block_wdgt': None, 
                     'block_state': 'blank'})
             self.field.append(row)
@@ -153,35 +134,17 @@ class MineSweeper:
     """
     def __init__(self):
         self.root = tk.Tk()
-        #self.root.resizable(width=False, height=False) 
+        self.root.geometry("164x160+186+725")
+        
         if debug:
             self.root.attributes('-alpha', 1)
-        
+
+
+
         """ 
         Image objects
         """
         path = os.getcwd()
-        
-        # 7 Segment Display
-        self.sevenseg = [n for n in range(11)]
-        self.sevenseg[0]= tk.PhotoImage(file=fr"{path}\img\7_segment\0.gif")
-        self.sevenseg[1] = tk.PhotoImage(file=fr"{path}\img\7_segment\1.gif")
-        self.sevenseg[2] = tk.PhotoImage(file=fr"{path}\img\7_segment\2.gif")
-        self.sevenseg[3] = tk.PhotoImage(file=fr"{path}\img\7_segment\3.gif")
-        self.sevenseg[4] = tk.PhotoImage(file=fr"{path}\img\7_segment\4.gif")
-        self.sevenseg[5] = tk.PhotoImage(file=fr"{path}\img\7_segment\5.gif")
-        self.sevenseg[6] = tk.PhotoImage(file=fr"{path}\img\7_segment\6.gif")
-        self.sevenseg[7] = tk.PhotoImage(file=fr"{path}\img\7_segment\7.gif")
-        self.sevenseg[8] = tk.PhotoImage(file=fr"{path}\img\7_segment\8.gif")
-        self.sevenseg[9] = tk.PhotoImage(file=fr"{path}\img\7_segment\9.gif")
-        self.sevenseg[10] = tk.PhotoImage(file=fr"{path}\img\7_segment\-.gif")
-        
-        # Mine Face... is a handsome one
-        self.smile_face = tk.PhotoImage(file=fr"{path}\img\smile_face.gif")
-        self.smile_face_pressed = tk.PhotoImage(file=fr"{path}\img\smile_face_pressed.gif")
-        self.wow_face = tk.PhotoImage(file=fr"{path}\img\wow_face.gif")
-        self.lose_face = tk.PhotoImage(file=fr"{path}\img\lose_face.gif")
-        self.win_face = tk.PhotoImage(file=fr"{path}\img\win_face.gif")
 
         # Mine cover blocks
         self.blank_block = tk.PhotoImage(file=fr"{path}\img\blank_block.gif")
@@ -194,7 +157,7 @@ class MineSweeper:
         self.mine_wrong = tk.PhotoImage(file=fr"{path}\img\bomb_wrong.gif")
         
         # MineField numbers
-        self.mine_nums = [n for n in range(9)]
+        self.mine_nums = [n for n in range(10)]
         self.mine_nums[0] = tk.PhotoImage(file=fr"{path}\img\field_numbers\0.gif")
         self.mine_nums[1] = tk.PhotoImage(file=fr"{path}\img\field_numbers\1.gif")
         self.mine_nums[2] = tk.PhotoImage(file=fr"{path}\img\field_numbers\2.gif")
@@ -204,15 +167,17 @@ class MineSweeper:
         self.mine_nums[6] = tk.PhotoImage(file=fr"{path}\img\field_numbers\6.gif")
         self.mine_nums[7] = tk.PhotoImage(file=fr"{path}\img\field_numbers\7.gif")
         self.mine_nums[8] = tk.PhotoImage(file=fr"{path}\img\field_numbers\8.gif")
+        self.mine_nums[9] = tk.PhotoImage(file=fr"{path}\img\field_numbers\marker.gif")
+        
+        """
+        sweep_field() Elements
+        """
+        self.block_click = [None, None]
+        
         
         """
         Environment elements
         """
-        if debug:
-            self.root.geometry("164x202+350+468")
-        else:
-            self.root.geometry("164x202")
-        
         # UI details
         self.dark_edge = "#808080"
         self.transient_edge = "#C0C0C0"
@@ -226,6 +191,9 @@ class MineSweeper:
 
         # The Minefield 
         self.mf = Minefield_Obj(self.field_size)
+        
+        # Tagged mine slot for analyze_sweep() - [x,y]
+        self.minefield_tags = []
 
         # Mine Border Calc - DO NOT CHANGE
         self.mine_border = 4
@@ -276,27 +244,23 @@ class MineSweeper:
         
         if debug:
             self.debug = tk.Menu(self.menubar, tearoff=0)
-            self.debug.add_command(label="reset_game()", command=self.reset_game)
+            self.debug.add_command(label="analyze_sweep()", command=self.analyze_sweep)
             self.debug.add_separator()
+            self.debug.add_command(label="reset_game()", command=self.reset_game)
+
             self.menubar.add_cascade(label="Debug", menu=self.debug)
             
             self.field_obj_menu = tk.Menu(self.menubar, tearoff=0)
             self.field_obj_menu.add_command(label="print_fieldObj_info()", command=self.print_fieldObj_info)
             self.field_obj_menu.add_command(label="print_fieldObj()", command=self.print_fieldObj)
-            self.field_obj_menu.add_command(label="generate_field()", command=self.mf.generate_field)
-            self.field_obj_menu.add_command(label="reset_field()", command=self.mf.reset_field)
             self.menubar.add_cascade(label="Field Obj", menu=self.field_obj_menu)
             
             self.field_menu = tk.Menu(self.menubar, tearoff=0)
             self.field_menu.add_command(label="place_mines()", command=self.place_mines)
-            self.field_menu.add_separator()
             self.field_menu.add_command(label="analyze_field()", command=self.analyze_field)
-            self.field_menu.add_command(label="draw_field()", command=self.draw_field)
-            self.field_menu.add_command(label="draw_blocks()", command=self.draw_blocks)
-            self.field_menu.add_command(label="clear_field()", command=self.clear_field)
-
             self.field_menu.add_separator()
-            self.field_menu.add_command(label="clear_blocks()", command=self.clear_blocks)
+            self.field_menu.add_command(label="draw_field()", command=self.draw_field)
+            self.field_menu.add_command(label="clear_field()", command=self.clear_field)
             self.menubar.add_cascade(label="Field", menu=self.field_menu)
         
         self.root.config(menu=self.menubar)
@@ -326,33 +290,58 @@ class MineSweeper:
 
     """ Event Handling Methods """
     def __events__(self):
+        self.minefield.bind("<Button-1>", self.minefield_Button1_Press)
+        self.minefield.bind("<Double-Button-1>", self.minefield_Button1_Double)
+        self.minefield.bind("<Button-3>", self.minefield_tag)
+        
+    def minefield_tag(self, event=None):
+        """ Add a tag identifier to the minefield for analyze_sweep() debug
+        routines. Gist is, you right click a field slot and it lays an 
+        identifier that analyse_sweep() will begin from. Allowing for viewing
+        of the sweep pattern."""
+        print(f"minefield_tag(): x{event.x} y{event.y}")
+        
+        # Calculate the click area on Minefield canvas down to the array
+        # coordinates and round down to whole number
+        x = math.floor(event.x / self.mine_pxs)
+        y = math.floor(event.y / self.mine_pxs)
+        
+        # Calculate the relative 0,0 position for the image placement 
+        # withing the grid layout
+        gx = self.mine_pxs * x + 1
+        gy = self.mine_pxs * y + 1
+        
+        # Toggle tag on field
+        if self.mf.field[y][x]['tag_id'] == None:
+            iid = self.minefield.create_image(gx, gy, image=self.mine_nums[9], 
+                anchor="nw")
+            self.mf.field[y][x]['tag_id'] = iid
+            self.minefield_tags = [x, y]
+
+        else:
+            self.minefield.delete(self.mf.field[y][x]['tag_id'])
+            self.mf.field[y][x]['tag_id'] = None
+            self.minefield_tags = []
+    
+    def minefield_Button1_Press(self, event=None):
+        """ Place analysis number on the field and allow for 
+        left clicking through the number array, 0-9"""
+        # Turn field click area into mf.field[yx]
+        fld_xy = self.field_click_grid_xy(event.x, event.y)
+        
+        # Get image 0,0 for relative top let corner placement
+        img_xy = self.field_click_img_xy(event.x, event.y)
+        
+        # Keep every clicking on a series of rolling 8, increment by 1
+        mine = self.mf.field[fld_xy[1]][fld_xy[0]]['mine']
+        mine = (mine % 8) + 1
+        
+        
         pass
         
-    def minefield_btn1_press(self, event=None):
-        if debug:
-            print("btn1_press")
-        
-        event.widget.config(image="")
-
-        self.mine_face.config(image=self.wow_face)
-
-    def minefield_btn1_release(self, event=None):
-        if debug:
-            print("btn1_release")
-        
-        # Only start mine timer if it isn't running
-        if not self.mine_timer_bool:
-            self.mine_timer_bool = True
-            self.timer_handle()
-        
-        # Delete the field mask
-        # TODO: Branch this to its own method?
-        yx = event.widget.yx_strap
-        self.minefield.delete(self.mf.field[yx[0]][yx[1]]['mask_id'])
-        event.widget.destroy()
-        
-        self.mine_face.config(image=self.smile_face)
-
+    def minefield_Button1_Double(self, event=None):
+        pass
+    
     def minefield_btn3_press(self, event=None):
         if debug:
             print("btn3_press")
@@ -405,6 +394,26 @@ class MineSweeper:
         if debug:
             print("btn3_release")
         
+    """ UI Coordinate Methods """
+    def field_click_grid_xy(self, x, y):
+        """ Convert field click coordinates into the respective array slots 
+        in Minefield_Obj"""
+        x_ = math.floor(x / self.mine_pxs)
+        y_ = math.floor(y / self.mine_pxs)
+        
+        return [x_, y_]
+        
+    def field_click_img_xy(self, x, y):
+        """ Convert a click point into a relative 0,0 coordinate 
+        of the top left corner in our destination field grid.
+        Used for placement of image in a specific field slot"""
+        xy = self.field_click_grid_xy(event.x, event.y)
+        
+        # Multiple the array numerics by the field block pixel size to get
+        # the 0,0 index of the top left corner of area
+        x_ = xy[0] * self.mine_pxs
+        y_ = xy[1] * self.mine_pxs
+    
     """ Drawing Methods """
     def draw_mine_border(self):
         # Top Edge
@@ -474,8 +483,6 @@ class MineSweeper:
         for y in range(len(self.mf.field)):
             for x in range(len(self.mf.field)):
                 if self.mf.is_mine(x, y):
-                    if debug:
-                        print(f"DEBUG: analyze_field(): x:{x} y:{y} is_mine: {self.mf.is_mine(x, y)}")
 
                     ## Previous Row
                     # Up and Left
@@ -577,10 +584,9 @@ class MineSweeper:
                     self.minefield.delete(self.mf.field[y][x]['img_id'])
                     self.mf.field[y][x]['img_id'] = None
                 
-                # Clear mask images
-                if self.mf.field[y][x]['mask_id'] != None:
-                    self.minefield.delete(self.mf.field[y][x]['mask_id'])
-                    self.mf.field[y][x]['mask_id'] = None
+                # Clear minefield tags
+                if self.mf.field[y][x]['tag_id'] != None:
+                    self.minefield.delete(self.mf.field[y][x]['tag_id'])
                 
                 # Destroy block elements
                 if self.mf.field[y][x]['block_wdgt'] != None:
@@ -592,63 +598,19 @@ class MineSweeper:
         
         return True
 
-    def draw_blocks(self):
-        ## Blocks overlap minefield border by 1px on NW side, so index by 0
-        # Canvas/Button place offset
-        field_x, field_y = 0, 0
+    """ Field Sweep Methods """
+    def analyze_sweep(self):
+        if self.minefield_tags == []:
+            print("DEBUG: analyze_sweep(): tag bit coordinates are not set.")
+            return False
         
-        for y in range(len(self.mf.field)):
-            for x in range(len(self.mf.field[y])):
-                # Create blank img button and place() it on canvas
-                self.mf.field[y][x]['block_wdgt'] = tk.Label(self.minefield, 
-                    image=self.blank_block, highlightthickness=0, bd=0)
-                self.mf.field[y][x]['block_wdgt'].place(x=field_x, y=field_y)
-                
-                # Widget-strap our field coordinates 
-                self.mf.field[y][x]['block_wdgt'].yx_strap = [y, x]
-                
-                ## Bind the event handlers
-                # Block Left click Press and Release events
-                # This bind is unbound in minefield_btn3_press() & rebound
-                # TODO: make this generalized for cleanliness of code
-                self.mf.field[y][x]['block_wdgt'].bind("<ButtonPress-1>", 
-                    self.minefield_btn1_press)
-                self.mf.field[y][x]['block_wdgt'].bind("<ButtonRelease-1>", 
-                    self.minefield_btn1_release)
-                    
-                # Block Right click Press and Release events
-
-                self.mf.field[y][x]['block_wdgt'].bind("<ButtonPress-3>", 
-                    self.minefield_btn3_press)
-                self.mf.field[y][x]['block_wdgt'].bind("<ButtonRelease-3>", 
-                    self.minefield_btn3_release)
-                
-                # Offset x
-                field_x += self.mine_pxs
-            
-            field_x = 0
-            field_y += self.mine_pxs
-
     def sweep_field(self):
         pass
 
-    def expose_mine(self, x, y):
-        # Attempt to remove mask img and block button, raise exception otherwise
-        try:
-            self.minefield.delete(self.mf.field[y][x]['mask_id'])
-            self.mf.field[y][x]['block_wdgt'].destroy()
-          
-        except:
-            raise exception()
-            
     def reset_game(self):
         """ Reset the game"""
         self.clear_field()
         
-        # Update Scoreboard
-        self.set_mine_count()
-        self.mine_timer_bool = False
-        self.set_time(0)
         
         ## DO NOT CHANGE ORDER ##
         # Order is specific for the purpose of image layers and which is 
@@ -656,8 +618,7 @@ class MineSweeper:
         self.place_mines()
         self.analyze_field()
         self.draw_field()
-        self.mask_field()
-        self.draw_blocks()
+        #self.draw_blocks()
 
     def mainloop(self):
         self.root.mainloop()
@@ -676,9 +637,18 @@ class MineSweeper:
         
         # Print clean Field Matrix
         print("Minefield Matrix:")
+        print("    0  1  2  3  4  5  6  7  8")
         for y in range(len(self.mf.field)):
+            print(f" {y} ", end="")
+            
             for x in range(len(self.mf.field[y])):
-                print("[", end="")
+                # HiLight tag block brackets red
+                if self.mf.field[y][x]['tag_id'] != None:
+                    print(f"{red}[\33[0m", end="")
+                else:
+                    print("[", end="")
+                
+                # Replace mine with 'x' and colorize red
                 if self.mf.field[y][x]['mine'] == 9:
                     print("\33[31m" + "x" + "\33[0m", end="")
                 
@@ -701,12 +671,19 @@ class MineSweeper:
                         color = black
                     elif num == 8:
                         color = white
+                    elif num == 9:
+                        color = red
                     else:
                         color = ""
-                        
+                    
+                    # Display the grid element
                     print(f"{color}{self.mf.field[y][x]['mine']}\33[0m", end="")
-                    #print(self.mf.field[y][x]['mine'], end="")
-                print("]", end="")
+                
+                # Hilight tag block brackets red
+                if self.mf.field[y][x]['tag_id'] != None:
+                    print(f"{red}]\33[0m", end="")
+                else:
+                    print("]", end="")
                 
             print()
             
@@ -717,14 +694,6 @@ class MineSweeper:
                 print(f"Column: {x} - {self.mf.field[y][x]}")
             
             print()
-
-    def clear_blocks(self):
-        for y in range(len(self.mf.field)):
-            for x in range(len(self.mf.field[y])):
-                self.mf.field[y][x]['block_wdgt'].destroy()
-                self.mf.field[y][x]['block_wdgt'] = None
-                
-        return True
 
 
 if __name__ == "__main__":

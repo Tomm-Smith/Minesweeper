@@ -23,7 +23,7 @@ class Minefield_Obj:
             'mine_coords': [0, 0], (y, x)
             'img_id' : None,
             'tag_id': None,
-            'block_wdgt': None,
+            'mask': None,
             'block_state': None}
 
 
@@ -35,8 +35,11 @@ class Minefield_Obj:
         img_id:      - Image id of item on the minefield, None otherwise
         tag_id:     - Numeric ID of instantiated mask image hiding the mines
                        until click_release, None otherwise
-        block_wdgt:  - Individual Widget of block covering minefield, None otherwise
+        mask:       - iid of mask image, None otherwise
         block_state: - State of Field Block, EG. 'blank', 'flag', 'question'
+        
+     TODO: - Restructure data structure so that referencing is done by [x][y] 
+            not [y][x]
     """
     def __init__(self, field_size):
         self.field_size = field_size
@@ -176,7 +179,7 @@ class MineSweeper:
         sweep_field() Elements
         """
         self.block_click = [None, None]
-        
+        self.field_tag = []
         
         """
         Environment elements
@@ -194,9 +197,6 @@ class MineSweeper:
 
         # The Minefield 
         self.mf = Minefield_Obj(self.field_size)
-        
-        # Tagged mine slot for analyze_sweep() - [x,y]
-        self.minefield_tags = []
 
         # Mine Border Calc - DO NOT CHANGE
         self.mine_border = 4
@@ -301,7 +301,9 @@ class MineSweeper:
         """ Add a tag identifier to the minefield for analyze_sweep() debug
         routines. Gist is, you right click a field slot and it lays an 
         identifier that analyse_sweep() will begin from. Allowing for viewing
-        of the sweep pattern."""
+        of the sweep pattern.
+        
+        #TODO: Break this up into methods as to simplify code"""
         print(f"minefield_tag(): x{event.x} y{event.y}")
         
         # Calculate the click area on Minefield canvas down to the array
@@ -314,17 +316,27 @@ class MineSweeper:
         gx = self.mine_pxs * x + 1
         gy = self.mine_pxs * y + 1
         
-        # Toggle tag on field
-        if self.mf.field[y][x]['tag_id'] == None:
+        # Create tag
+        if self.field_tag == []:
             iid = self.minefield.create_image(gx, gy, image=self.mine_nums[9], 
                 anchor="nw")
             self.mf.field[y][x]['tag_id'] = iid
-            self.minefield_tags = [x, y]
-
+            self.field_tag = [x, y]
+        
+        # Delete old tag and create new one
+        elif self.field_tag != [x,y]:
+            self.minefield.delete(self.mf.field[self.field_tag[1]]
+                                               [self.field_tag[0]]['tag_id'])
+            iid = self.minefield.create_image(gx, gy, image=self.mine_nums[9], 
+                anchor="nw")
+            self.mf.field[y][x]['tag_id'] = iid
+            self.field_tag = [x, y]
+        
+        # Remove tag
         else:
             self.minefield.delete(self.mf.field[y][x]['tag_id'])
             self.mf.field[y][x]['tag_id'] = None
-            self.minefield_tags = []
+            self.field_tag = []
     
     def minefield_Button1(self, event=None):
         """ Place analysis number on the field and allow for 
@@ -384,58 +396,6 @@ class MineSweeper:
             image=img, anchor="nw")
         self.mf.field[fld_xy[1]][fld_xy[0]]['img_id'] = iid
     
-    def minefield_btn3_press(self, event=None):
-        if debug:
-            print("btn3_press")
-            
-        # unstrap our widget-strap
-        yx = event.widget.yx_strap
-        
-        # Define our state values for condition
-        if self.mf.field[yx[0]][yx[1]]['block_state'] == 'blank':
-            # set blank state
-            img = self.flag_block
-            state = 'flag'
-            
-            # Flags are not interactive, so unbind the Left Click Press event
-            # TODO: make this generalized for cleanliness of code
-            self.mf.field[yx[0]][yx[1]]['block_wdgt'].unbind("<ButtonPress-1>")
-            self.mf.field[yx[0]][yx[1]]['block_wdgt'].unbind("<ButtonRelease-1>")
-            
-            # Deincrement the mine counter
-            self.set_mine_count(-1)
-        
-        elif self.mf.field[yx[0]][yx[1]]['block_state'] == 'flag':
-            # Set flag state
-            img = self.question_block
-            state = 'question'
-            
-            # Rebind the button press event
-            self.mf.field[yx[0]][yx[1]]['block_wdgt'].bind("<ButtonPress-1>", 
-                self.minefield_btn1_press)
-            self.mf.field[yx[0]][yx[1]]['block_wdgt'].bind("<ButtonRelease-1>", 
-                self.minefield_btn1_release)
-                
-            # Increment the mine counter
-            self.set_mine_count(1)
-            
-        elif self.mf.field[yx[0]][yx[1]]['block_state'] == 'question':
-            # Set question state
-            img = self.blank_block
-            state = 'blank'
-            
-        # Something isn't right if this happens, raise unhandled exception
-        else:
-            raise Exception("Minesweeper() -> minefield_btn3_press(): unhandled exception raised")
-            
-        # Set our defined values for Blocks and minefield state
-        event.widget.config(image=img)
-        self.mf.field[yx[0]][yx[1]]['block_state'] = state
-        
-    def minefield_btn3_release(self, event=None):
-        if debug:
-            print("btn3_release")
-        
     """ UI Coordinate Methods """
     def field_click_grid_xy(self, x, y):
         """ Convert field click coordinates into the respective array slots 
@@ -643,10 +603,41 @@ class MineSweeper:
         return True
 
     """ Field Sweep Methods """
+    def set_mask(self, x, y):
+        """ Set a mask overlay on a swept block for diagnostic troubleshooting
+        
+        Pretty crude, this method infers first run on a clean field with no 
+        prior sweep masks. TODO: Fix this.
+        """
+        iid = self.minefield.create_image(x, y, self.mask)
+        self.mf.field[y][x]['mask'] = iid
+    
     def analyze_sweep(self):
-        if self.minefield_tags == []:
+        if self.field_tag == []:
             print("DEBUG: analyze_sweep(): tag bit coordinates are not set.")
             return False
+        
+        # The list that will be swept after analysis, all entrys are stored 
+        # as coordinate list's in the form .append([x, ])
+        sweep_list = []
+        
+        # The current float position of sweeping through field
+        x, y = self.field_tag[0], self.field_tag[1]
+        
+        # Ensure the field is empty
+        if self.mf.field[y][x]['mine'] != None:
+            print("DEBUG: analyq_sweep(): field slot not empty, nothing to sweep")
+            return False
+        
+        
+        # Begin our sweeping steps through the field, revealing the analysis 
+        # numerics as our field continent (surrounding the blank ocean)
+        if self.mf.field[y-1][x-1] != None:
+            pass
+            # reveal
+        
+        
+        
         
     def sweep_field(self):
         pass

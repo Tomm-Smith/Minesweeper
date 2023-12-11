@@ -156,6 +156,9 @@ class MineSweeper:
         self.mine_clicked = tk.PhotoImage(file=fr"{path}\img\bomb_clicked.gif")
         self.mine_wrong = tk.PhotoImage(file=fr"{path}\img\bomb_wrong.gif")
         
+        # Mask
+        self.mask = tk.PhotoImage(file=fr"{path}\img\field_numbers\mask.gif")
+        
         # MineField numbers
         self.mine_nums = [n for n in range(10)]
         self.mine_nums[0] = tk.PhotoImage(file=fr"{path}\img\field_numbers\0.gif")
@@ -290,8 +293,8 @@ class MineSweeper:
 
     """ Event Handling Methods """
     def __events__(self):
-        self.minefield.bind("<Button-1>", self.minefield_Button1_Press)
-        self.minefield.bind("<Double-Button-1>", self.minefield_Button1_Double)
+        self.minefield.bind("<Button-1>", self.minefield_Button1)
+        self.minefield.bind("<Control-Button-1>", self.minefield_ctrl_Button1)
         self.minefield.bind("<Button-3>", self.minefield_tag)
         
     def minefield_tag(self, event=None):
@@ -323,24 +326,63 @@ class MineSweeper:
             self.mf.field[y][x]['tag_id'] = None
             self.minefield_tags = []
     
-    def minefield_Button1_Press(self, event=None):
+    def minefield_Button1(self, event=None):
         """ Place analysis number on the field and allow for 
-        left clicking through the number array, 0-9"""
+        left clicking through the number array, 0-9
+        
+        TODO: Disperse this method and minefield_ctrl_Button1()
+        into a single coord method, then specific image manipulation"""
+        
         # Turn field click area into mf.field[yx]
         fld_xy = self.field_click_grid_xy(event.x, event.y)
-        
+        print(f"fld_xy: {fld_xy}")
         # Get image 0,0 for relative top let corner placement
         img_xy = self.field_click_img_xy(event.x, event.y)
-        
-        # Keep every clicking on a series of rolling 8, increment by 1
+        print(f"img_xy: {img_xy}")
+        # Keep every click on a series of rolling 8, increment by 1
         mine = self.mf.field[fld_xy[1]][fld_xy[0]]['mine']
-        mine = (mine % 8) + 1
+        mine = (mine + 1) % 9
         
+        # Assign our increment
+        self.mf.field[fld_xy[1]][fld_xy[0]]['mine'] = mine
         
-        pass
+        # Delete existing image
+        self.minefield.delete(self.mf.field[fld_xy[1]][fld_xy[0]]['img_id'])
         
-    def minefield_Button1_Double(self, event=None):
-        pass
+        # Draw new
+        iid = self.minefield.create_image(img_xy[0], img_xy[1], 
+            image=self.mine_nums[mine], anchor="nw")
+        self.mf.field[fld_xy[1]][fld_xy[0]]['img_id'] = iid
+        
+    def minefield_ctrl_Button1(self, event=None):
+        """ Place mine on selected field slot
+        
+        TODO: Disperse this method and minefield_Button1_Press()
+        into a single coord method, then specific image manipulation"""
+        
+        # Turn field click area into mf.field[yx]
+        fld_xy = self.field_click_grid_xy(event.x, event.y)
+        print(f"fld_xy: {fld_xy}")
+        # Get image 0,0 for relative top let corner placement
+        img_xy = self.field_click_img_xy(event.x, event.y)
+        print(f"img_xy: {img_xy}")
+
+        
+        # Place mine in field object
+        if self.mf.field[fld_xy[1]][fld_xy[0]]['mine'] == 9:
+            self.mf.field[fld_xy[1]][fld_xy[0]]['mine'] = 0
+            img = self.mine_nums[0]
+        else:
+            self.mf.field[fld_xy[1]][fld_xy[0]]['mine'] = 9
+            img = self.mine
+            
+        # Delete existing image
+        self.minefield.delete(self.mf.field[fld_xy[1]][fld_xy[0]]['img_id'])
+        
+        # Draw new
+        iid = self.minefield.create_image(img_xy[0], img_xy[1], 
+            image=img, anchor="nw")
+        self.mf.field[fld_xy[1]][fld_xy[0]]['img_id'] = iid
     
     def minefield_btn3_press(self, event=None):
         if debug:
@@ -407,12 +449,14 @@ class MineSweeper:
         """ Convert a click point into a relative 0,0 coordinate 
         of the top left corner in our destination field grid.
         Used for placement of image in a specific field slot"""
-        xy = self.field_click_grid_xy(event.x, event.y)
+        xy = self.field_click_grid_xy(x, y)
         
         # Multiple the array numerics by the field block pixel size to get
         # the 0,0 index of the top left corner of area
-        x_ = xy[0] * self.mine_pxs
-        y_ = xy[1] * self.mine_pxs
+        x_ = xy[0] * self.mine_pxs + 1
+        y_ = xy[1] * self.mine_pxs + 1
+        
+        return [x_, y_]
     
     """ Drawing Methods """
     def draw_mine_border(self):

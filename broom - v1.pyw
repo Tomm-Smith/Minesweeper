@@ -59,7 +59,7 @@ class Minefield_Obj:
                     'mine_coords': [0, 0], 
                     'img_id' : None, 
                     'tag_id': None, 
-                    'block_wdgt': None, 
+                    'mask': None, 
                     'block_state': 'blank'})
             self.field.append(row)
             row = []
@@ -178,8 +178,9 @@ class MineSweeper:
         """
         sweep_field() Elements
         """
+        # [x, y] coordinates
         self.block_click = [None, None]
-        self.field_tag = []
+        self.field_tag = [None, None]
         
         """
         Environment elements
@@ -264,6 +265,9 @@ class MineSweeper:
             self.field_menu.add_separator()
             self.field_menu.add_command(label="draw_field()", command=self.draw_field)
             self.field_menu.add_command(label="clear_field()", command=self.clear_field)
+            self.field_menu.add_separator()
+            self.field_menu.add_command(label="mask()", command=self.mask_field)
+            self.field_menu.add_command(label="clear_mask()", command=self.clear_mask)
             self.menubar.add_cascade(label="Field", menu=self.field_menu)
         
         self.root.config(menu=self.menubar)
@@ -293,9 +297,10 @@ class MineSweeper:
 
     """ Event Handling Methods """
     def __events__(self):
-        self.minefield.bind("<Button-1>", self.minefield_Button1)
+        self.minefield.bind("<Button-1>", self.clear_grid_slot)
         self.minefield.bind("<Control-Button-1>", self.minefield_ctrl_Button1)
         self.minefield.bind("<Button-3>", self.minefield_tag)
+        self.minefield.bind("<Button-5>", self.minefield_Button1)
         
     def minefield_tag(self, event=None):
         """ Add a tag identifier to the minefield for analyze_sweep() debug
@@ -320,6 +325,7 @@ class MineSweeper:
         if self.field_tag == []:
             iid = self.minefield.create_image(gx, gy, image=self.mine_nums[9], 
                 anchor="nw")
+            self.minefield.tag_raise(iid)
             self.mf.field[y][x]['tag_id'] = iid
             self.field_tag = [x, y]
         
@@ -353,7 +359,7 @@ class MineSweeper:
         print(f"img_xy: {img_xy}")
         # Keep every click on a series of rolling 8, increment by 1
         mine = self.mf.field[fld_xy[1]][fld_xy[0]]['mine']
-        mine = (mine + 1) % 9
+        mine = (mine + 1) % 2 # Only loop 0 and 1
         
         # Assign our increment
         self.mf.field[fld_xy[1]][fld_xy[0]]['mine'] = mine
@@ -395,6 +401,23 @@ class MineSweeper:
         iid = self.minefield.create_image(img_xy[0], img_xy[1], 
             image=img, anchor="nw")
         self.mf.field[fld_xy[1]][fld_xy[0]]['img_id'] = iid
+    
+    def clear_grid_slot(self, event=None):
+        x, y = self.field_click_grid_xy(event.x, event.y)
+        x_, y_ = self.field_click_img_xy(event.x, event.y)
+        
+        #self.minefield.delete(self.mf.field[y][x]['img_id'])
+        #self.mf.field[y][x]['img_id'] = None
+        
+        #self.minefield.delete(self.mf.field[y][x]['tag_id'])
+        #self.mf.field[y][x]['tag_id'] = None
+        
+        if self.mf.field[y][x]['mask'] != None:
+            self.minefield.delete(self.mf.field[y][x]['mask'])
+            self.mf.field[y][x]['mask'] = None
+        else:
+            iid = self.minefield.create_image(x_, y_, image=self.mask, anchor="nw")
+            self.mf.field[y][x]['mask'] = iid
     
     """ UI Coordinate Methods """
     def field_click_grid_xy(self, x, y):
@@ -464,6 +487,28 @@ class MineSweeper:
             self.minefield.create_line(n * self.mine_pxs, 0, 
                 n * self.mine_pxs, self.field_height, 
                 fill="#808080")
+
+    def mask_field(self):
+        # Draw coordinates
+        x_, y_ = 1, 1
+        
+        for y in range(len(self.mf.field)):
+            for x in range(len(self.mf.field[y])):
+                if self.mf.field[y][x]['mask'] == None:
+                    iid = self.minefield.create_image(x_, y_, image=self.mask, 
+                        anchor="nw")
+                    self.mf.field[y][x]['mask'] = iid
+                
+                x_ += 16
+            
+            x_ = 1
+            y_ += 16
+
+    def clear_mask(self):
+        for y in range(len(self.mf.field)):
+            for x in range(len(self.mf.field[y])):
+                self.minefield.delete(self.mf.field[y][x]['mask'])
+                self.mf.field[y][x]['mask'] = None
 
     """ Field Methods """
     def place_mines(self):
@@ -593,9 +638,9 @@ class MineSweeper:
                     self.minefield.delete(self.mf.field[y][x]['tag_id'])
                 
                 # Destroy block elements
-                if self.mf.field[y][x]['block_wdgt'] != None:
-                    self.mf.field[y][x]['block_wdgt'].destroy()
-                    self.mf.field[y][x]['block_wdgt'] = None
+                if self.mf.field[y][x]['mask'] != None:
+                    self.minefield.delete(self.mf.field[y][x]['mask'])
+                    self.mf.field[y][x]['mask'] = None
         
         # Reset minefield matrix
         self.mf.reset_field()
@@ -609,7 +654,7 @@ class MineSweeper:
         Pretty crude, this method infers first run on a clean field with no 
         prior sweep masks. TODO: Fix this.
         """
-        iid = self.minefield.create_image(x, y, self.mask)
+        iid = self.minefield.create_image(x, y, self.mask, anchor="nw")
         self.mf.field[y][x]['mask'] = iid
     
     def analyze_sweep(self):
@@ -626,14 +671,15 @@ class MineSweeper:
         
         # Ensure the field is empty
         if self.mf.field[y][x]['mine'] != None:
-            print("DEBUG: analyq_sweep(): field slot not empty, nothing to sweep")
+            print("DEBUG: analyze_sweep(): field slot not empty, nothing to sweep")
             return False
+        
         
         
         # Begin our sweeping steps through the field, revealing the analysis 
         # numerics as our field continent (surrounding the blank ocean)
         if self.mf.field[y-1][x-1] != None:
-            pass
+            pass 
             # reveal
         
         
@@ -653,6 +699,7 @@ class MineSweeper:
         self.place_mines()
         self.analyze_field()
         self.draw_field()
+        self.mask_field()
         #self.draw_blocks()
 
     def mainloop(self):

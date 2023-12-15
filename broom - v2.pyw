@@ -276,14 +276,14 @@ class MineSweeper:
         # Border
         self.minefield_bd_frm = tk.Frame(self.root, border=self.mine_border, 
             background="#C0C0C0")
-        self.minefield_bd_frm.pack(side="bottom")
+        self.minefield_bd_frm.pack(side="bottom", fill=None, expand=False)
         
         self.minefield_bd = tk.Canvas(self.minefield_bd_frm, 
             height=self.field_height_bd, 
             width=self.field_width_bd, 
             background="#C0C0C0", 
             bd=0, highlightthickness=0)
-        self.minefield_bd.pack(fill="none", expand=False)
+        self.minefield_bd.pack(side="bottom", fill="none", expand=False)
         
         self.draw_mine_border()
         
@@ -295,10 +295,79 @@ class MineSweeper:
             bd=0, highlightthickness=0)
         self.minefield_bd.create_window(3, 3, anchor="nw", window=self.minefield)
 
+        
+        # Field Column Header
+        self.minefield_col = tk.Canvas(self.root,
+            height = self.mine_pxs,
+            width = self.mine_pxs * self.field_size,
+            background="red", 
+            bd=0, highlightthickness=0)
+        self.minefield_col.pack(side="top", fill="none", expand=False)
+                
+        # Column Numbers
+        self.minefield_col.create_image(0, 1, image=self.mine_nums[1], 
+            anchor="nw")
+        self.minefield_col.create_image(16, 0, image=self.mine_nums[1], 
+            anchor="nw")
+        self.minefield_col.create_image(32, 0, image=self.mine_nums[2], 
+            anchor="nw")
+        self.minefield_col.create_image(48, 0, image=self.mine_nums[3], 
+            anchor="nw")
+        self.minefield_col.create_image(64, 0, image=self.mine_nums[4], 
+            anchor="nw")
+        self.minefield_col.create_image(80, 0, image=self.mine_nums[5], 
+            anchor="nw")
+        self.minefield_col.create_image(96, 0, image=self.mine_nums[6], 
+            anchor="nw")
+        self.minefield_col.create_image(112, 0, image=self.mine_nums[7], 
+            anchor="nw")
+        self.minefield_col.create_image(128, 0, image=self.mine_nums[8], 
+            anchor="nw")
+
+        # Field Matrix Rows
+        self.minefield_row = tk.Canvas(self.root,
+            height = self.mine_pxs * self.field_size,
+            width = self.mine_pxs,
+            background="red", 
+            bd=0, highlightthickness=0)
+        self.minefield_row.pack(side="left", fill="none", expand=False)
+        
+        # Row Numbers
+        iid = self.minefield_row.create_image(0, 1, image=self.mine_nums[1], 
+            anchor="nw")
+        self.minefield_row.tag_raise(iid)
+        iid = self.minefield_row.create_image(16, 0, image=self.mine_nums[1], 
+            anchor="nw")
+        self.minefield_row.tag_raise(iid)
+        iid = self.minefield_row.create_image(32, 0, image=self.mine_nums[2], 
+            anchor="nw")
+        self.minefield_row.tag_raise(iid)
+        iid = self.minefield_row.create_image(48, 0, image=self.mine_nums[3], 
+            anchor="nw")
+        self.minefield_row.tag_raise(iid)
+        iid = self.minefield_row.create_image(64, 0, image=self.mine_nums[4], 
+            anchor="nw")
+        self.minefield_row.tag_raise(iid)
+        iid = self.minefield_row.create_image(80, 0, image=self.mine_nums[5], 
+            anchor="nw")
+        self.minefield_row.tag_raise(iid)
+        iid = self.minefield_row.create_image(96, 0, image=self.mine_nums[6], 
+            anchor="nw")
+        self.minefield_row.tag_raise(iid)
+        iid = self.minefield_row.create_image(112, 0, image=self.mine_nums[7], 
+            anchor="nw")
+        self.minefield_row.tag_raise(iid)
+        iid = self.minefield_row.create_image(128, 0, image=self.mine_nums[8], 
+            anchor="nw")
+        self.minefield_row.tag_raise(iid)
+        
+        #self.minefield.lower()
+
+
     """ Event Handling Methods """
     def __events__(self):
         self.minefield.bind("<Button-1>", self.clear_grid_slot)
-        self.minefield.bind("<Control-Button-1>", self.minefield_ctrl_Button1)
+        self.minefield.bind("<Button-4>", self.minefield_Button4)
         self.minefield.bind("<Button-3>", self.minefield_tag)
         self.minefield.bind("<Button-5>", self.minefield_Button1)
         
@@ -322,7 +391,7 @@ class MineSweeper:
         gy = self.mine_pxs * y + 1
         
         # Create tag
-        if self.field_tag == []:
+        if self.field_tag == [None, None]:
             iid = self.minefield.create_image(gx, gy, image=self.mine_nums[9], 
                 anchor="nw")
             self.minefield.tag_raise(iid)
@@ -331,8 +400,7 @@ class MineSweeper:
         
         # Delete old tag and create new one
         elif self.field_tag != [x,y]:
-            self.minefield.delete(self.mf.field[self.field_tag[1]]
-                                               [self.field_tag[0]]['tag_id'])
+            self.minefield.delete(self.mf.field[self.field_tag[1]][self.field_tag[0]]['tag_id'])
             iid = self.minefield.create_image(gx, gy, image=self.mine_nums[9], 
                 anchor="nw")
             self.mf.field[y][x]['tag_id'] = iid
@@ -342,7 +410,7 @@ class MineSweeper:
         else:
             self.minefield.delete(self.mf.field[y][x]['tag_id'])
             self.mf.field[y][x]['tag_id'] = None
-            self.field_tag = []
+            self.field_tag = [None, None]
     
     def minefield_Button1(self, event=None):
         """ Place analysis number on the field and allow for 
@@ -372,7 +440,7 @@ class MineSweeper:
             image=self.mine_nums[mine], anchor="nw")
         self.mf.field[fld_xy[1]][fld_xy[0]]['img_id'] = iid
         
-    def minefield_ctrl_Button1(self, event=None):
+    def minefield_Button4(self, event=None):
         """ Place mine on selected field slot
         
         TODO: Disperse this method and minefield_Button1_Press()
@@ -648,44 +716,160 @@ class MineSweeper:
         return True
 
     """ Field Sweep Methods """
-    def set_mask(self, x, y):
-        """ Set a mask overlay on a swept block for diagnostic troubleshooting
+    def unmask(self, x, y):
+        """ Unmask the single mask at provided coordinates."""
+        #print(f"DEBUG: unmask(): x{x} y{y}")
+        try:
+            if self.mf.field[y][x] == None:
+                return False
+            else:
+                # Ensure the coordinates are within the matrix range
+                if x >= 0 and x < len(self.mf.field[y]) \
+                and y >= 0 and y < len(self.mf.field):
+                    self.minefield.delete(self.mf.field[y][x]['mask'])
+                    self.mf.field[y][x]['mask'] = None
+                    
+                    return True
+        except IndexError:
+            return False
+    
+    def unmask_peers(self, x, y):
+        """ Remove the mask overlay from all surrounding peers of provided
+        coordinates that are not mines."""
+        if debug:
+            print(f"DEBUG: unmask_peers(): x{x} y{y}")
+            
+        # Check selected slot
+        if not self.is_mine(x, y):
+            print(f"DEBUG: unmask_peers(): Pos: x{x} y{y} - {self.unmask(x, y)}")
         
-        Pretty crude, this method infers first run on a clean field with no 
-        prior sweep masks. TODO: Fix this.
-        """
-        iid = self.minefield.create_image(x, y, self.mask, anchor="nw")
-        self.mf.field[y][x]['mask'] = iid
+        # NW
+        if not self.is_mine(x-1, y-1):
+            #self.unmask(x-1, y-1)
+            print(f"DEBUG: unmask_peers(): Pos: x{x} y{y} - {self.unmask(x-1, y-1)}")
+        
+        # N
+        if not self.is_mine(x, y-1):
+            #self.unmask(x, y-1)
+            print(f"DEBUG: unmask_peers(): Pos: x{x} y{y} - {self.unmask(x, y-1)}")
+        
+        # NE
+        if not self.is_mine(x+1, y-1):
+            #self.unmask(x+1, y-1)
+            print(f"DEBUG: unmask_peers(): Pos: x{x} y{y} - {self.unmask(x+1, y-1)}")
+        
+        # E
+        if not self.is_mine(x+1, y):
+            #self.unmask(x+1, y)
+            print(f"DEBUG: unmask_peers(): Pos: x{x} y{y} - {self.unmask(x+1, y)}")
+        
+        # SE
+        if not self.is_mine(x+1, y+1):
+            #self.unmask(x+1, y+1)
+            print(f"DEBUG: unmask_peers(): Pos: x{x} y{y} - {self.unmask(x+1, y+1)}")
+        
+        # S
+        if not self.is_mine(x, y+1):
+            #self.unmask(x, y+1)
+            print(f"DEBUG: unmask_peers(): Pos: x{x} y{y} - {self.unmask(x, y+1)}")
+        
+        # SW
+        if not self.is_mine(x-1, y+1):
+            #self.unmask(x-1, y+1)
+            print(f"DEBUG: unmask_peers(): Pos: x{x} y{y} - {self.unmask(x-1, y+1)}")
+        
+        # W
+        if not self.is_mine(x-1, y):
+            #self.unmask(x-1, y)
+            print(f"DEBUG: unmask_peers(): Pos: x{x} y{y} - {self.unmask(x-1, y)}")
+        
+        print("--------------------------------------------------------")
+        return True
+        
+    def is_mine(self, x, y):
+        try:
+            if self.mf.field[y][x]['mask'] == 9:
+                return True
+            else:
+                return False
+                
+        except IndexError:
+            return False
+    
+    def is_number(self, x, y):
+        try:
+            if self.mf.field[y][x]['mine'] in [1,2,3,4,5,6,7,8]:
+                return True
+            else:
+                return False
+        except IndexError:
+            return False
+    
+    def move(self, x, y):
+        """ Move to provided coords only if:
+        - not a mine
+        - not an analysis number"""
+        if self.is_mine(x, y) or self.is_number(x, y):
+            print(f"DEBUG: move(): x{x} y{y} is either a mine or int, not moving.")
+            return False
+            
+        # Only if 
     
     def analyze_sweep(self):
+        """ - Analyze the surrounding grid environment from cell of reference
+        and sweep the minefield of all empty cell's surrounded by analysis
+        "continents".
+        
+        Movement Decision
+        
+        By default, analysis should attempt at a 'nw' movement, as long
+        as the following criteria is met (not necessarily in order):
+            - "nw" is not a mine
+            - "nw" is not an analysis number
+            - "nw" is not off the grid
+            - heading anchor is not set
+        """
         if self.field_tag == []:
             print("DEBUG: analyze_sweep(): tag bit coordinates are not set.")
             return False
         
+        # Minefield Object
+        mf = self.mf.field
+        
         # The list that will be swept after analysis, all entrys are stored 
-        # as coordinate list's in the form .append([x, ])
+        # as coordinate list's in the form .append([x, y])
         sweep_list = []
         
-        # The current float position of sweeping through field
+        # Crumb trail to track path
+        crumb_trl = []
+        
+        # The current position to sweep from
         x, y = self.field_tag[0], self.field_tag[1]
         
-        # Ensure the field is empty
-        if self.mf.field[y][x]['mine'] != None:
-            print("DEBUG: analyze_sweep(): field slot not empty, nothing to sweep")
-            return False
+        # Directions
+        directions = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
         
-        
-        
-        # Begin our sweeping steps through the field, revealing the analysis 
-        # numerics as our field continent (surrounding the blank ocean)
-        if self.mf.field[y-1][x-1] != None:
-            pass 
-            # reveal
-        
-        
-        
-        
+        # Direction anchor - nw, n, ne, e, se, s, sw, w
+        direction = "nw"
+
+        # Unmask surrounding peers to grid coordinates
+        self.unmask_peers(x, y)
+            
+            
+            
+
+            
+            
+
+
+
+
     def sweep_field(self):
+        pass
+
+    """ Sweep Debug Methods """
+    def sweep_trace(self):
+        """ Create a numeric trail for the sake of algorithm development"""
         pass
 
     def reset_game(self):

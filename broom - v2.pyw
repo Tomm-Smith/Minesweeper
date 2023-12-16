@@ -47,6 +47,7 @@ class Minefield_Obj:
 
     def generate_field(self, size=None):
         """generate_field() - Generate a clean field data structure"""
+        #TODO: Make this delete the field images
         # Set default field size
         if not size:
             size = self.field_size
@@ -181,6 +182,7 @@ class MineSweeper:
         # [x, y] coordinates
         self.block_click = [None, None]
         self.field_tag = [None, None]
+        self.field_step = [None, None]
         
         """
         Environment elements
@@ -233,18 +235,10 @@ class MineSweeper:
         ### File Menu ###
         self.menubar = tk.Menu(self.root)
         
-        if not debug:
-            self.file = tk.Menu(self.menubar, tearoff=0)
-            self.file.add_command(label="Something", command="")
-            self.menubar.add_cascade(label="File", menu=self.file)
-            
-            self.help = tk.Menu(self.menubar, tearoff=0)
-            self.help.add_command(label="About Minesweeper...", command="")
-            self.menubar.add_cascade(label="Help", menu=self.help)
-            """ Help Dialog:
-                - EasterEgg?
-                - It aslways seems impossible until it's done. - Nelson Mandela
-            """
+        self.file = tk.Menu(self.menubar, tearoff=0)
+        self.file.add_command(label="Small", command=self.small_field)
+        self.file.add_command(label="Large", command=self.large_field)
+        self.menubar.add_cascade(label="File", menu=self.file)
         
         if debug:
             self.debug = tk.Menu(self.menubar, tearoff=0)
@@ -275,15 +269,15 @@ class MineSweeper:
         ### MineField ### 
         # Border
         self.minefield_bd_frm = tk.Frame(self.root, border=self.mine_border, 
-            background="#C0C0C0")
-        self.minefield_bd_frm.pack(side="bottom", fill=None, expand=False)
+            background="#C0C0C0", bd=0, highlightthickness=0)
+        self.minefield_bd_frm.pack(side="top", fill=None, expand=False)
         
         self.minefield_bd = tk.Canvas(self.minefield_bd_frm, 
             height=self.field_height_bd, 
             width=self.field_width_bd, 
             background="#C0C0C0", 
             bd=0, highlightthickness=0)
-        self.minefield_bd.pack(side="bottom", fill="none", expand=False)
+        self.minefield_bd.pack(side="top", fill="none", expand=False)
         
         self.draw_mine_border()
         
@@ -296,8 +290,8 @@ class MineSweeper:
         self.minefield_bd.create_window(3, 3, anchor="nw", window=self.minefield)
 
         
-        # Field Column Header
-        self.minefield_col = tk.Canvas(self.root,
+        # Field Column Header - TODO: Needed?
+        """self.minefield_col = tk.Canvas(self.root,
             height = self.mine_pxs,
             width = self.mine_pxs * self.field_size,
             background="red", 
@@ -359,13 +353,72 @@ class MineSweeper:
         self.minefield_row.tag_raise(iid)
         iid = self.minefield_row.create_image(128, 0, image=self.mine_nums[8], 
             anchor="nw")
-        self.minefield_row.tag_raise(iid)
+        self.minefield_row.tag_raise(iid)"""
         
-        #self.minefield.lower()
+    """ GUI Formatting Methods"""
+    def clear_grid(self):
+        # Destroy our existing and create a new one
+        self.minefield.delete("all")
 
+    def resize_field(self, size=None):
+        """ Resize the field size"""
+        # TODO: How to make the mine_border adjustment better?
+        self.field_width_bd = self.field_width + (self.mine_border * 2)
+        self.field_height_bd = self.field_width_bd
+        
+        self.minefield_bd.config(height=self.field_height_bd)
+        self.minefield_bd.config(width=self.field_width_bd)
+        
+        self.minefield.config(height=self.field_height)
+        self.minefield.config(width=self.field_width)
+        
+    def small_field(self):
+        # TODO: Genarlize these methods into less repetition
+        self.root.geometry("166x159")
+    
+        #TODO: Fix Minefield_Obj as to support asymmetrical grids
+        self.field_size = 9
+        self.mines = 10
+        
+        self.field_height = self.mine_pxs * self.field_size
+        self.field_width = self.field_height
+        
+        # Redraw grid structure and field
+        self.mf.generate_field(self.field_size)
+        
+        self.clear_grid()
+        self.resize_field()
+        self.draw_mine_border()
+        self.draw_grid()
+        
+    def large_field(self):
+        # Resize window
+        self.root.geometry("502x492")
+        
+        # 16x30 Default 
+        #TODO: Fix Minefield_Obj as to support asymmetrical grids
+        self.field_size = 30
+        self.mines = 100
+        
+        self.field_height = self.mine_pxs * self.field_size
+        self.field_width = self.field_height
+        
+        # Redraw grid structure and field
+        self.mf.generate_field(self.field_size)
+        
+        self.clear_grid()
+        self.resize_field()
+        self.draw_mine_border()
+        self.draw_grid()
+        
 
+    
     """ Event Handling Methods """
     def __events__(self):
+        if debug:
+            self.root.bind("<Button-1>", self.root_click_coords)
+            self.root.bind("<Configure>", self.window_geometry)
+    
         self.minefield.bind("<Button-1>", self.clear_grid_slot)
         self.minefield.bind("<Button-4>", self.minefield_Button4)
         self.minefield.bind("<Button-3>", self.minefield_tag)
@@ -486,7 +539,7 @@ class MineSweeper:
         else:
             iid = self.minefield.create_image(x_, y_, image=self.mask, anchor="nw")
             self.mf.field[y][x]['mask'] = iid
-    
+
     """ UI Coordinate Methods """
     def field_click_grid_xy(self, x, y):
         """ Convert field click coordinates into the respective array slots 
@@ -509,8 +562,11 @@ class MineSweeper:
         
         return [x_, y_]
     
-    """ Drawing Methods """
+    """ GUI Methods """
     def draw_mine_border(self):
+        w = self.field_height
+        h = self.field_width
+    
         # Top Edge
         self.minefield_bd.create_line(0, 0, 149, 0, fill=self.dark_edge)
         self.minefield_bd.create_line(149, 0, 150, 0, fill=self.transient_edge)
@@ -523,11 +579,12 @@ class MineSweeper:
         self.minefield_bd.create_line(147, 2, 148, 2, fill=self.transient_edge)
         self.minefield_bd.create_line(148, 2, 150, 2, fill=self.light_edge)
 
-        # Left / Right Edge Fill
+        # Left Edge Fill
         self.minefield_bd.create_line(0, 3, 0, 147, fill=self.dark_edge)
         self.minefield_bd.create_line(1, 3, 1, 147, fill=self.dark_edge)
         self.minefield_bd.create_line(2, 3, 2, 147, fill=self.dark_edge)
         
+        # Right Edge Fill
         self.minefield_bd.create_line(147, 3, 147, 150, fill=self.light_edge)
         self.minefield_bd.create_line(148, 3, 148, 150, fill=self.light_edge)
         self.minefield_bd.create_line(149, 3, 149, 150, fill=self.light_edge)
@@ -555,7 +612,8 @@ class MineSweeper:
             self.minefield.create_line(n * self.mine_pxs, 0, 
                 n * self.mine_pxs, self.field_height, 
                 fill="#808080")
-
+                
+        
     def mask_field(self):
         # Draw coordinates
         x_, y_ = 1, 1
@@ -813,7 +871,13 @@ class MineSweeper:
             print(f"DEBUG: move(): x{x} y{y} is either a mine or int, not moving.")
             return False
             
-        # Only if 
+        try:
+            self.mf.field[y][x]
+        except IndexError:
+            return False
+            
+        if self.mf.field[y][x]['mine'] == None:
+            pass
     
     def analyze_sweep(self):
         """ - Analyze the surrounding grid environment from cell of reference
@@ -961,6 +1025,12 @@ class MineSweeper:
             
             print()
 
+    # Window Size / Location information
+    def root_click_coords(self, event):
+        print(f"DEBUG: root_click_coords(): x_root: {event.x_root} y_root: {event.y_root}")
+
+    def window_geometry(self, event):
+        print(f"DEBUG: window_geometry(): {self.root.geometry()}")
 
 if __name__ == "__main__":
     ms = MineSweeper()

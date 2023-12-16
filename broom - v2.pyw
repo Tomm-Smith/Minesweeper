@@ -202,7 +202,7 @@ class MineSweeper:
         self.mf = Minefield_Obj(self.field_size)
 
         # Mine Border Calc - DO NOT CHANGE
-        self.mine_border = 4
+        self.mine_border = 3
         
         # Field dimensions
         self.field_width = self.mine_pxs * self.field_size
@@ -356,7 +356,21 @@ class MineSweeper:
         self.minefield_row.tag_raise(iid)"""
         
     """ GUI Formatting Methods"""
+    def draw_grid(self):
+        # Draw grid
+        for n in range(self.field_size):
+            # Horizontal
+            self.minefield.create_line(0, n * self.mine_pxs, 
+                self.field_width, n * self.mine_pxs, 
+                fill="#808080")
+            # Vertical
+            self.minefield.create_line(n * self.mine_pxs, 0, 
+                n * self.mine_pxs, self.field_height, 
+                fill="#808080")
+                
     def clear_grid(self):
+        # Clear all elements from grid
+        self.clear_field()
         # Destroy our existing and create a new one
         self.minefield.delete("all")
 
@@ -404,13 +418,55 @@ class MineSweeper:
         self.field_width = self.field_height
         
         # Redraw grid structure and field
-        self.mf.generate_field(self.field_size)
+        
         
         self.clear_grid()
         self.resize_field()
+        self.mf.generate_field(self.field_size)
         self.draw_mine_border()
         self.draw_grid()
         
+    def draw_mine_border(self):
+        
+        height = self.field_height
+        width = self.field_width
+        
+        h = self.field_height + (self.mine_border * 2)
+        w = self.field_width_bd
+        
+        # Top Edge and Top-Right gradient
+        self.minefield_bd.create_line(0, 0, w-1, 0, fill=self.dark_edge)
+        self.minefield_bd.create_line(w-1, 0, w, 0, fill=self.transient_edge)
+        
+        self.minefield_bd.create_line(0, 1, w-2, 1, fill=self.dark_edge)
+        self.minefield_bd.create_line(w-2, 1, w-1, 1, fill=self.transient_edge)
+        self.minefield_bd.create_line(w-1, 1, w, 1, fill=self.light_edge)
+        
+        self.minefield_bd.create_line(0, 2, w-3, 2, fill=self.dark_edge)
+        self.minefield_bd.create_line(w-3, 2, w-2, 2, fill=self.transient_edge)
+        self.minefield_bd.create_line(w-2, 2, w, 2, fill=self.light_edge)
+
+        # Left Edge Fill
+        self.minefield_bd.create_line(0, 3, 0, h-3, fill=self.dark_edge)
+        self.minefield_bd.create_line(1, 3, 1, h-3, fill=self.dark_edge)
+        self.minefield_bd.create_line(2, 3, 2, h-3, fill=self.dark_edge)
+        
+        # Right Edge Fill
+        self.minefield_bd.create_line(w-3, 3, w-3, h, fill=self.light_edge)
+        self.minefield_bd.create_line(w-2, 3, w-2, h, fill=self.light_edge)
+        self.minefield_bd.create_line(w-1, 3, w-1, h, fill=self.light_edge)
+        
+        #Bottom Edge
+        self.minefield_bd.create_line(0, h-3, 2, h-3, fill=self.dark_edge)
+        self.minefield_bd.create_line(2, h-3, 3, h-3, fill=self.transient_edge)
+        self.minefield_bd.create_line(3, h-3, w-1, h-3, fill=self.light_edge)
+        
+        self.minefield_bd.create_line(0, h-2, 1, h-2, fill=self.dark_edge)
+        self.minefield_bd.create_line(1, h-2, 2, h-2, fill=self.transient_edge)
+        self.minefield_bd.create_line(2, h-2, w-1, h-2, fill=self.light_edge)
+        
+        self.minefield_bd.create_line(0, h-1, 1, h-1, fill=self.transient_edge)
+        self.minefield_bd.create_line(1, h-1, w-1, h-1, fill=self.light_edge)
 
     
     """ Event Handling Methods """
@@ -453,7 +509,11 @@ class MineSweeper:
         
         # Delete old tag and create new one
         elif self.field_tag != [x,y]:
+            # Delete old one
             self.minefield.delete(self.mf.field[self.field_tag[1]][self.field_tag[0]]['tag_id'])
+            self.mf.field[self.field_tag[1]][self.field_tag[0]]['tag_id'] = None
+            
+            # Create new one
             iid = self.minefield.create_image(gx, gy, image=self.mine_nums[9], 
                 anchor="nw")
             self.mf.field[y][x]['tag_id'] = iid
@@ -563,57 +623,6 @@ class MineSweeper:
         return [x_, y_]
     
     """ GUI Methods """
-    def draw_mine_border(self):
-        w = self.field_height
-        h = self.field_width
-    
-        # Top Edge
-        self.minefield_bd.create_line(0, 0, 149, 0, fill=self.dark_edge)
-        self.minefield_bd.create_line(149, 0, 150, 0, fill=self.transient_edge)
-        
-        self.minefield_bd.create_line(0, 1, 148, 1, fill=self.dark_edge)
-        self.minefield_bd.create_line(148, 1, 149, 1, fill=self.transient_edge)
-        self.minefield_bd.create_line(149, 1, 150, 1, fill=self.light_edge)
-        
-        self.minefield_bd.create_line(0, 2, 147, 2, fill=self.dark_edge)
-        self.minefield_bd.create_line(147, 2, 148, 2, fill=self.transient_edge)
-        self.minefield_bd.create_line(148, 2, 150, 2, fill=self.light_edge)
-
-        # Left Edge Fill
-        self.minefield_bd.create_line(0, 3, 0, 147, fill=self.dark_edge)
-        self.minefield_bd.create_line(1, 3, 1, 147, fill=self.dark_edge)
-        self.minefield_bd.create_line(2, 3, 2, 147, fill=self.dark_edge)
-        
-        # Right Edge Fill
-        self.minefield_bd.create_line(147, 3, 147, 150, fill=self.light_edge)
-        self.minefield_bd.create_line(148, 3, 148, 150, fill=self.light_edge)
-        self.minefield_bd.create_line(149, 3, 149, 150, fill=self.light_edge)
-        
-        #Bottom Edge
-        self.minefield_bd.create_line(0, 147, 2, 147, fill=self.dark_edge)
-        self.minefield_bd.create_line(2, 147, 3, 147, fill=self.transient_edge)
-        self.minefield_bd.create_line(3, 147, 149, 147, fill=self.light_edge)
-        
-        self.minefield_bd.create_line(0, 148, 1, 148, fill=self.dark_edge)
-        self.minefield_bd.create_line(1, 148, 2, 148, fill=self.transient_edge)
-        self.minefield_bd.create_line(2, 148, 149, 148, fill=self.light_edge)
-        
-        self.minefield_bd.create_line(0, 149, 1, 149, fill=self.transient_edge)
-        self.minefield_bd.create_line(1, 149, 149, 149, fill=self.light_edge)
-
-    def draw_grid(self):
-        # Draw grid
-        for n in range(self.field_size):
-            # Horizontal
-            self.minefield.create_line(0, n * self.mine_pxs, 
-                self.field_width, n * self.mine_pxs, 
-                fill="#808080")
-            # Vertical
-            self.minefield.create_line(n * self.mine_pxs, 0, 
-                n * self.mine_pxs, self.field_height, 
-                fill="#808080")
-                
-        
     def mask_field(self):
         # Draw coordinates
         x_, y_ = 1, 1
@@ -752,6 +761,8 @@ class MineSweeper:
 
     def clear_field(self):
         """ Reset all values in minefield matrix and draw empty field"""
+        self.field_tag = [None, None] 
+        
         for y in range(len(self.mf.field)):
             for x in range(len(self.mf.field[y])):
                 # Clear minefield images

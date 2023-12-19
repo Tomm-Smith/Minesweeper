@@ -87,13 +87,12 @@ class Minefield_Obj:
 
     def in_field(self, x, y):
         """ If the coords are within the field matrix, True; False otherwise"""
-        if y < 0 or y > len(self.field):
-            return False
+        try:
+            self.field[y][x]
+            return True
             
-        if x < 0 or x > len(self.field[0]):
+        except IndexError:
             return False
-            
-        return True
 
     def is_mine(self, x, y):
         if self.field[y][x]['mine'] == 9:
@@ -102,7 +101,7 @@ class Minefield_Obj:
             return False
 
     def is_blank(self, x, y):
-        if self.field[y][x]['block_state'] == 'blank':
+        if self.field[y][x]['mine'] == 0:
             return True
         else:
             return False
@@ -251,7 +250,7 @@ class MineSweeper:
             self.field_obj_menu = tk.Menu(self.menubar, tearoff=0)
             self.field_obj_menu.add_command(label="print_fieldObj_info()", command=self.print_fieldObj_info)
             self.field_obj_menu.add_command(label="print_fieldObj()", command=self.print_fieldObj)
-            self.menubar.add_cascade(label="Field Obj", menu=self.field_obj_menu)
+            self.menubar.add_cascade(label="Objt", menu=self.field_obj_menu)
             
             self.field_menu = tk.Menu(self.menubar, tearoff=0)
             self.field_menu.add_command(label="place_mines()", command=self.place_mines)
@@ -780,7 +779,7 @@ class MineSweeper:
                     self.mf.field[y][x]['mask'] = None
         
         # Reset minefield matrix
-        self.mf.reset_field()
+        self.mf.generate_field(self.field_size)
         
         return True
 
@@ -804,67 +803,97 @@ class MineSweeper:
     
     def unmask_peers(self, x, y):
         """ Remove the mask overlay from all surrounding peers of provided
-        coordinates that are not mines."""
+        coordinates as long as the following are met:
+         - Is in field
+         - Is not a mine
+         - Is not isolated by adjacent headings. 
+            EG. E and S are numbers, SE is empty; SE should not unmask"""
         if debug:
             print(f"DEBUG: unmask_peers(): x{x} y{y}")
             
+        if not self.mf.in_field(x, y):
+            print("ERROR: unmask_peers(): Provided coordinates are not in matrix")
+            return False
+        
+        
         # Check selected slot
-        if not self.is_mine(x, y):
+        if self.mf.in_field(x, y) and not self.mf.is_mine(x, y):
             print(f"DEBUG: unmask_peers(): Pos: x{x} y{y} - {self.unmask(x, y)}")
-        
-        # NW
-        if not self.is_mine(x-1, y-1):
-            #self.unmask(x-1, y-1)
+
+
+
+
+        # NW - Remove mask only if criteria is other than:
+        # (North filled, NW empty, W filled) and in_field() and not mine
+        if not (not self.mf.is_blank(x, y-1) and \
+            self.mf.is_blank(x-1, y-1) and \
+            not self.mf.is_blank(x-1, y)) \
+            and self.mf.in_field(x-1, y-1) and not self.mf.is_mine(x-1, y-1):
+            
+            #self.unmask(x+1, y-1)
             print(f"DEBUG: unmask_peers(): Pos: x{x} y{y} - {self.unmask(x-1, y-1)}")
-        
+
+
         # N
-        if not self.is_mine(x, y-1):
+        if self.mf.in_field(x, y-1) and not self.mf.is_mine(x, y-1):
             #self.unmask(x, y-1)
             print(f"DEBUG: unmask_peers(): Pos: x{x} y{y} - {self.unmask(x, y-1)}")
-        
-        # NE
-        if not self.is_mine(x+1, y-1):
+
+
+        # NE - Remove mask only if criteria is other than:
+        # (North filled, NE empty, E filled) and in_field() and not mine
+        # 
+        if not (not self.mf.is_blank(x, y-1) and \
+            self.mf.is_blank(x+1, y-1) and \
+            not self.mf.is_blank(x+1, y)) \
+            and self.mf.in_field(x+1, y-1) and not self.mf.is_mine(x+1, y-1):
+            
             #self.unmask(x+1, y-1)
             print(f"DEBUG: unmask_peers(): Pos: x{x} y{y} - {self.unmask(x+1, y-1)}")
-        
+
+
         # E
-        if not self.is_mine(x+1, y):
+        if self.mf.in_field(x+1, y) and not self.mf.is_mine(x+1, y):
             #self.unmask(x+1, y)
             print(f"DEBUG: unmask_peers(): Pos: x{x} y{y} - {self.unmask(x+1, y)}")
-        
-        # SE
-        if not self.is_mine(x+1, y+1):
-            #self.unmask(x+1, y+1)
+
+
+        # SE - Remove mask only if criteria is other than:
+        # (South filled, SE empty, E filled) and in_field() and not mine
+        if not (not self.mf.is_blank(x+1, y) and \
+            self.mf.is_blank(x+1, y+1) and \
+            not self.mf.is_blank(x, y+1)) \
+            and self.mf.in_field(x+1, y+1) and not self.mf.is_mine(x+1, y+1):
+            
+            #self.unmask(x+1, y-1)
             print(f"DEBUG: unmask_peers(): Pos: x{x} y{y} - {self.unmask(x+1, y+1)}")
-        
+
+
         # S
-        if not self.is_mine(x, y+1):
+        if self.mf.in_field(x, y+1) and not self.mf.is_mine(x, y+1):
             #self.unmask(x, y+1)
             print(f"DEBUG: unmask_peers(): Pos: x{x} y{y} - {self.unmask(x, y+1)}")
-        
-        # SW
-        if not self.is_mine(x-1, y+1):
-            #self.unmask(x-1, y+1)
+
+
+        # SW - Remove mask only if criteria is other than:
+        # (South filled, SW empty, W filled) and in_field() and not mine
+        if not (not self.mf.is_blank(x, y+1) and \
+            self.mf.is_blank(x-1, y+1) and \
+            not self.mf.is_blank(x-1, y)) \
+            and self.mf.in_field(x-1, y+1) and not self.mf.is_mine(x-1, y+1):
+            
+            #self.unmask(x+1, y-1)
             print(f"DEBUG: unmask_peers(): Pos: x{x} y{y} - {self.unmask(x-1, y+1)}")
-        
+
+
         # W
-        if not self.is_mine(x-1, y):
+        if self.mf.in_field(x-1, y) and not self.mf.is_mine(x-1, y):
             #self.unmask(x-1, y)
             print(f"DEBUG: unmask_peers(): Pos: x{x} y{y} - {self.unmask(x-1, y)}")
-        
+
         print("--------------------------------------------------------")
         return True
-        
-    def is_mine(self, x, y):
-        try:
-            if self.mf.field[y][x]['mask'] == 9:
-                return True
-            else:
-                return False
-                
-        except IndexError:
-            return False
-    
+
     def is_number(self, x, y):
         try:
             if self.mf.field[y][x]['mine'] in [1,2,3,4,5,6,7,8]:
@@ -890,6 +919,13 @@ class MineSweeper:
         if self.mf.field[y][x]['mine'] == None:
             pass
     
+    def analyze_move(self, x, y):
+        """ Analyze the first possible move following criteria and return 
+        coordinates or False otherwise."""
+        pass
+        # Directions - List of relative grid coordinates
+        directions = [[]]
+        
     def analyze_sweep(self):
         """ - Analyze the surrounding grid environment from cell of reference
         and sweep the minefield of all empty cell's surrounded by analysis
@@ -906,6 +942,10 @@ class MineSweeper:
         """
         if self.field_tag == []:
             print("DEBUG: analyze_sweep(): tag bit coordinates are not set.")
+            return False
+        
+        if self.field_tag[0] == None or self.field_tag[1] == None:
+            print("ERROR: analyze_sweep(): Field tag coordinates are not set")
             return False
         
         # Minefield Object
@@ -929,15 +969,8 @@ class MineSweeper:
 
         # Unmask surrounding peers to grid coordinates
         self.unmask_peers(x, y)
-            
-            
-            
-
-            
-            
-
-
-
+        
+        # Analyze next move
 
     def sweep_field(self):
         pass
@@ -980,6 +1013,8 @@ class MineSweeper:
         print("Minefield Matrix:")
         print("    0  1  2  3  4  5  6  7  8")
         for y in range(len(self.mf.field)):
+            if y < 10:
+                print(" ", end="")
             print(f" {y} ", end="")
             
             for x in range(len(self.mf.field[y])):

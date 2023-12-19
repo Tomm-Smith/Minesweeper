@@ -1,22 +1,5 @@
 """
-EasterEgg:
-- MineCount - If you view help after you have won it will give the count of times
-  'mine' is used in the application code. If loss, mine application will NOT give
-  mine count of mine useage in mine mine application. Mine.
-    - Hidden button appears, click, mines propogate field with inverted colors?
-    - Shows famous quote in statusbar, quite possibly from a database hosted on 
-      my blinkenshell account?
-    - Mine Glider works across the field
-    - Start rotating images in a pattern 
-
-TODO:
-- are Minefield_Obj['mine_coords'] used for anything or excessive?
-- Make certain all img's are properly removed!
-- Only mask occupied slots on field in mask_field()
-- Are the Canvas element of the proper attributes and decendance? 
-    - Why do some elements have 1 px (draw_field()) offsets
-- Fix white ghost on W side of block only when Button-1 is held between block
-    click.
+Minesweeper - A game for mine janitors.
 """
 
 
@@ -91,7 +74,8 @@ class Minefield_Obj:
                 row.append({'mine': 0, 
                     'mine_coords': [0, 0], 
                     'img_id' : None, 
-                    'mask_id': None, 
+                    'tag_id': None, 
+                    'mask_id' : None,
                     'block_wdgt': None, 
                     'block_state': 'blank'})
             self.field.append(row)
@@ -170,7 +154,8 @@ class MineSweeper:
     """
     def __init__(self):
         self.root = tk.Tk()
-        #self.root.resizable(width=False, height=False) 
+        self.root.resizable(width=False, height=False) 
+        
         if debug:
             self.root.attributes('-alpha', 1)
         
@@ -221,6 +206,7 @@ class MineSweeper:
         self.mine_nums[6] = tk.PhotoImage(file=fr"{path}\img\field_numbers\6.gif")
         self.mine_nums[7] = tk.PhotoImage(file=fr"{path}\img\field_numbers\7.gif")
         self.mine_nums[8] = tk.PhotoImage(file=fr"{path}\img\field_numbers\8.gif")
+
         
         """
         Environment elements
@@ -920,6 +906,16 @@ class MineSweeper:
 
     def sweep_field(self):
         pass
+
+    def expose_mine(self, x, y):
+        # Attempt to remove mask img and block button, raise exception otherwise
+        try:
+            self.minefield.delete(self.mf.field[y][x]['mask_id'])
+            self.mf.field[y][x]['block_wdgt'].destroy()
+          
+        except:
+            raise exception("Minesweeper() -> expose_mine(): Unhandled Exception")
+            
 
     def reset_game(self):
         """ Reset the game"""

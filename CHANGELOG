@@ -1,0 +1,29 @@
+[Keep a Changelog](https://keepachangelog.com/)
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html)
+
+# MineSweeper (https://github.com/Tomm-Smith/Minesweeper)
+
+Minesweeper - A Python/Tkinter clone of Windows XP winmin.exe Minesweeper
+              game. 
+
+
+## [0.0.3] - 2025-02-16
+
+# Added
+
+- CHANGELOG
+- LICENSE
+- LICENSE DISCLAIMER
+- Minesweeper-Example.jpg
+- README.md
+
+
+## [Unstable] - 2025-02-16
+
+### Added
+
+- Current state of project manifestation in unorganized, unbranched, untracked 
+  state
+
+
+[unstable]: https://github.com/Tomm-Smith/Minesweeper/commit/bde9fb9b05ebad3fbca7917849d140f1a5a06bb3

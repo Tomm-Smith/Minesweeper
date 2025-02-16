@@ -7,6 +7,14 @@ Minesweeper - A Python/Tkinter clone of Windows XP winmin.exe Minesweeper
               game. 
 
 
+## [0.0.5] - 2025-02-17
+
+### Changed
+
+- README.md - Clarified About section with Project Purpose bullet list
+- README.md - Expanded a Plans checklist as a next step roadmap for versioning
+
+
 ## [0.0.4] - 2025-02-16
 
 ### Added
@@ -43,5 +51,6 @@ Minesweeper - A Python/Tkinter clone of Windows XP winmin.exe Minesweeper
   state
 
 
+[0.0.4]: https://github.com/Tomm-Smith/Minesweeper/commit/d9df3df5a657e5db4b414a719ff4bba54b64fcce
 [0.0.3]: https://github.com/Tomm-Smith/Minesweeper/commit/06ac900b2bfc9b46b5d24ff902d47f6e2fbcd512
 [unstable]: https://github.com/Tomm-Smith/Minesweeper/commit/bde9fb9b05ebad3fbca7917849d140f1a5a06bb3

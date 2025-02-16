@@ -7,9 +7,26 @@ Minesweeper - A Python/Tkinter clone of Windows XP winmin.exe Minesweeper
               game. 
 
 
+## [0.0.4] - 2025-02-16
+
+### Added
+
+- Minesweeper.pyw
+- Broom.pyw
+
+### Changed
+
+- CHANGELOG
+
+### Removed
+
+- minesweeper_v0.1 Beta - v2.pyw
+- broom - v2.pyw
+
+
 ## [0.0.3] - 2025-02-16
 
-# Added
+### Added
 
 - CHANGELOG
 - LICENSE
@@ -26,4 +43,5 @@ Minesweeper - A Python/Tkinter clone of Windows XP winmin.exe Minesweeper
   state
 
 
+[0.0.3]: https://github.com/Tomm-Smith/Minesweeper/commit/06ac900b2bfc9b46b5d24ff902d47f6e2fbcd512
 [unstable]: https://github.com/Tomm-Smith/Minesweeper/commit/bde9fb9b05ebad3fbca7917849d140f1a5a06bb3

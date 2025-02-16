@@ -8,7 +8,7 @@ import os
 import random
 
 global debug
-debug = True
+debug = False
 
 
 class Minefield_Obj:
